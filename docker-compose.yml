@@ -1,0 +1,18 @@
+# Mawaid web service — to be merged with or extend the Supabase docker-compose.
+# See: https://github.com/supabase/supabase/blob/master/docker/docker-compose.yml
+
+services:
+  mawaid-web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        SUPABASE_URL: ${SUPABASE_URL}
+        SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+    ports:
+      - "80:80"
+    environment:
+      - TZ=Asia/Muscat
+    restart: unless-stopped
+    depends_on:
+      - supabase-kong

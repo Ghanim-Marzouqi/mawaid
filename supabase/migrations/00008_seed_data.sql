@@ -1,7 +1,7 @@
--- Seed test users via supabase_auth_admin role
--- These users will have their profiles auto-created by the handle_new_user() trigger
+-- Seed test users for local development.
+-- The handle_new_user() trigger auto-creates profiles from user_metadata.
 
--- Coordinator account
+-- Coordinator account (منى)
 INSERT INTO auth.users (
   instance_id,
   id,
@@ -19,13 +19,13 @@ INSERT INTO auth.users (
   recovery_token
 ) VALUES (
   '00000000-0000-0000-0000-000000000000',
-  'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+  gen_random_uuid(),
   'authenticated',
   'authenticated',
-  'coordinator@mawaid.local',
-  crypt('coordinator123', gen_salt('bf')),
+  'muna@mawaid.local',
+  crypt('mawaid123', gen_salt('bf')),
   now(),
-  '{"role": "coordinator", "full_name": "أحمد المنسق"}'::jsonb,
+  '{"role": "coordinator", "full_name": "منى"}'::jsonb,
   now(),
   now(),
   '',
@@ -34,7 +34,7 @@ INSERT INTO auth.users (
   ''
 );
 
--- Manager account
+-- Manager account (حاتم)
 INSERT INTO auth.users (
   instance_id,
   id,
@@ -52,13 +52,13 @@ INSERT INTO auth.users (
   recovery_token
 ) VALUES (
   '00000000-0000-0000-0000-000000000000',
-  'b2c3d4e5-f6a7-8901-bcde-f12345678901',
+  gen_random_uuid(),
   'authenticated',
   'authenticated',
-  'manager@mawaid.local',
-  crypt('manager123', gen_salt('bf')),
+  'hatem@mawaid.local',
+  crypt('mawaid123', gen_salt('bf')),
   now(),
-  '{"role": "manager", "full_name": "محمد المدير"}'::jsonb,
+  '{"role": "manager", "full_name": "حاتم"}'::jsonb,
   now(),
   now(),
   '',
@@ -67,43 +67,25 @@ INSERT INTO auth.users (
   ''
 );
 
--- Insert identity records for the users (required for Supabase Auth to work)
+-- Insert identity records (required for Supabase Auth sign-in to work)
 INSERT INTO auth.identities (
   id,
   user_id,
-  provider_id,
   identity_data,
   provider,
+  provider_id,
   last_sign_in_at,
   created_at,
   updated_at
-) VALUES (
-  'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-  'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-  'coordinator@mawaid.local',
-  '{"sub": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "email": "coordinator@mawaid.local"}'::jsonb,
-  'email',
-  now(),
-  now(),
-  now()
-);
-
-INSERT INTO auth.identities (
+)
+SELECT
   id,
-  user_id,
-  provider_id,
-  identity_data,
-  provider,
-  last_sign_in_at,
-  created_at,
-  updated_at
-) VALUES (
-  'b2c3d4e5-f6a7-8901-bcde-f12345678901',
-  'b2c3d4e5-f6a7-8901-bcde-f12345678901',
-  'manager@mawaid.local',
-  '{"sub": "b2c3d4e5-f6a7-8901-bcde-f12345678901", "email": "manager@mawaid.local"}'::jsonb,
+  id,
+  json_build_object('sub', id::text, 'email', email)::jsonb,
   'email',
+  id::text,
   now(),
   now(),
   now()
-);
+FROM auth.users
+WHERE email IN ('muna@mawaid.local', 'hatem@mawaid.local');

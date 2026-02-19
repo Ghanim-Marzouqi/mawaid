@@ -1,3 +1,6 @@
+-- Set timezone for the database
+ALTER DATABASE postgres SET timezone TO 'Asia/Muscat';
+
 CREATE TYPE user_role AS ENUM ('coordinator', 'manager');
 
 CREATE TYPE appointment_type AS ENUM ('ministry', 'patient', 'external');
