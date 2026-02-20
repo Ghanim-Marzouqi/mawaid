@@ -16,10 +16,20 @@ class NotificationItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: notification.isRead
-          ? AppColors.surface
-          : AppColors.primary.withValues(alpha: 0.05),
+    final isUnread = !notification.isRead;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isUnread
+            ? AppColors.primary.withValues(alpha: 0.06)
+            : AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isUnread
+              ? AppColors.primary.withValues(alpha: 0.18)
+              : Colors.grey.withValues(alpha: 0.12),
+        ),
+      ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
@@ -32,18 +42,17 @@ class NotificationItem extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: (notification.isRead
-                          ? AppColors.onSurfaceVariant
-                          : AppColors.primary)
-                      .withValues(alpha: 0.1),
+                  color: isUnread
+                      ? AppColors.primary.withValues(alpha: 0.12)
+                      : AppColors.primary.withValues(alpha: 0.06),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   LucideIcons.bell,
                   size: 18,
-                  color: notification.isRead
-                      ? AppColors.onSurfaceVariant
-                      : AppColors.primary,
+                  color: isUnread
+                      ? AppColors.primary
+                      : AppColors.primary.withValues(alpha: 0.45),
                 ),
               ),
               const SizedBox(width: 12),
@@ -54,10 +63,9 @@ class NotificationItem extends StatelessWidget {
                     Text(
                       notification.title,
                       style: TextStyle(
-                        fontWeight: notification.isRead
-                            ? FontWeight.w400
-                            : FontWeight.w500,
+                        fontWeight: isUnread ? FontWeight.w600 : FontWeight.w400,
                         fontSize: 14,
+                        color: isUnread ? AppColors.primary : null,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -72,14 +80,15 @@ class NotificationItem extends StatelessWidget {
                     Text(
                       formatDateTime(notification.createdAt),
                       style: TextStyle(
-                        color: AppColors.onSurfaceVariant.withValues(alpha: 0.7),
+                        color:
+                            AppColors.onSurfaceVariant.withValues(alpha: 0.7),
                         fontSize: 11,
                       ),
                     ),
                   ],
                 ),
               ),
-              if (!notification.isRead)
+              if (isUnread)
                 Container(
                   width: 8,
                   height: 8,

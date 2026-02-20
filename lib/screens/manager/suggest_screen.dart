@@ -19,6 +19,8 @@ class SuggestScreen extends ConsumerStatefulWidget {
 class _SuggestScreenState extends ConsumerState<SuggestScreen> {
   final _formKey = GlobalKey<FormState>();
   final _messageController = TextEditingController();
+  final _startTimeController = TextEditingController();
+  final _endTimeController = TextEditingController();
   DateTime? _startTime;
   DateTime? _endTime;
   bool _isLoading = false;
@@ -26,6 +28,8 @@ class _SuggestScreenState extends ConsumerState<SuggestScreen> {
   @override
   void dispose() {
     _messageController.dispose();
+    _startTimeController.dispose();
+    _endTimeController.dispose();
     super.dispose();
   }
 
@@ -62,11 +66,14 @@ class _SuggestScreenState extends ConsumerState<SuggestScreen> {
     setState(() {
       if (isStart) {
         _startTime = picked;
+        _startTimeController.text = _formatPicked(_startTime);
         if (_endTime == null || _endTime!.isBefore(picked)) {
           _endTime = picked.add(const Duration(hours: 1));
         }
+        _endTimeController.text = _formatPicked(_endTime);
       } else {
         _endTime = picked;
+        _endTimeController.text = _formatPicked(_endTime);
       }
     });
   }
@@ -153,7 +160,7 @@ class _SuggestScreenState extends ConsumerState<SuggestScreen> {
               children: [
                 _DateTimeField(
                   label: Strings.startTime,
-                  value: _formatPicked(_startTime),
+                  controller: _startTimeController,
                   onTap: () => _pickDateTime(isStart: true),
                   validator: (_) {
                     if (_startTime == null) return Strings.requiredField;
@@ -166,7 +173,7 @@ class _SuggestScreenState extends ConsumerState<SuggestScreen> {
                 const SizedBox(height: 16),
                 _DateTimeField(
                   label: Strings.endTime,
-                  value: _formatPicked(_endTime),
+                  controller: _endTimeController,
                   onTap: () => _pickDateTime(isStart: false),
                   validator: (_) {
                     if (_endTime == null) return Strings.requiredField;
@@ -225,13 +232,13 @@ class _SuggestScreenState extends ConsumerState<SuggestScreen> {
 
 class _DateTimeField extends StatelessWidget {
   final String label;
-  final String value;
+  final TextEditingController controller;
   final VoidCallback onTap;
   final String? Function(String?)? validator;
 
   const _DateTimeField({
     required this.label,
-    required this.value,
+    required this.controller,
     required this.onTap,
     this.validator,
   });
@@ -240,7 +247,7 @@ class _DateTimeField extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextFormField(
       readOnly: true,
-      initialValue: value,
+      controller: controller,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: const Icon(LucideIcons.calendarClock),
