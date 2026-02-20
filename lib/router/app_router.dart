@@ -10,6 +10,7 @@ import '../screens/coordinator/calendar_screen.dart' as coord;
 import '../screens/coordinator/create_appointment_screen.dart';
 import '../screens/coordinator/appointment_detail_screen.dart' as coord_detail;
 import '../screens/coordinator/notifications_screen.dart' as coord_notif;
+import '../screens/coordinator/edit_appointment_screen.dart' as coord_edit;
 import '../screens/coordinator/settings_screen.dart' as coord_settings;
 import '../screens/manager/manager_shell.dart';
 import '../screens/manager/pending_queue_screen.dart';
@@ -85,6 +86,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/coordinator/appointment/:id',
             builder: (_, state) => coord_detail.AppointmentDetailScreen(
+              id: state.pathParameters['id']!,
+            ),
+          ),
+          GoRoute(
+            path: '/coordinator/edit/:id',
+            builder: (_, state) => coord_edit.EditAppointmentScreen(
               id: state.pathParameters['id']!,
             ),
           ),

@@ -40,8 +40,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             return start.year == _selectedDay!.year &&
                 start.month == _selectedDay!.month &&
                 start.day == _selectedDay!.day &&
-                a.status != AppointmentStatus.cancelled &&
-                a.status != AppointmentStatus.rejected;
+                a.status != AppointmentStatus.cancelled;
           }).toList()
       ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
@@ -73,6 +72,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     CalendarView(
                       appointments: state.appointments,
                       selectedDay: _selectedDay,
+                      showRejected: true,
                       onDaySelected: (day) {
                         setState(() => _selectedDay = day);
                       },

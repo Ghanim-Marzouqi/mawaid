@@ -9,12 +9,14 @@ class CalendarView extends StatefulWidget {
   final List<Appointment> appointments;
   final void Function(DateTime selectedDay) onDaySelected;
   final DateTime? selectedDay;
+  final bool showRejected;
 
   const CalendarView({
     super.key,
     required this.appointments,
     required this.onDaySelected,
     this.selectedDay,
+    this.showRejected = false,
   });
 
   @override
@@ -37,9 +39,18 @@ class _CalendarViewState extends State<CalendarView> {
   List<Appointment> _getEventsForDay(DateTime day) {
     return widget.appointments.where((a) {
       final start = toMuscat(a.startTime);
-      return start.year == day.year &&
-          start.month == day.month &&
-          start.day == day.day;
+      if (start.year != day.year ||
+          start.month != day.month ||
+          start.day != day.day) {
+        return false;
+      }
+      if (a.status == AppointmentStatus.cancelled) {
+        return false;
+      }
+      if (a.status == AppointmentStatus.rejected && !widget.showRejected) {
+        return false;
+      }
+      return true;
     }).toList();
   }
 

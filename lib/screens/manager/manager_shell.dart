@@ -92,7 +92,7 @@ class _ManagerShellState extends ConsumerState<ManagerShell>
     final unreadCount = ref.watch(notificationProvider).unreadCount;
 
     final tabs = [
-      const NavigationItem(icon: LucideIcons.clock, label: 'بانتظار'),
+      const NavigationItem(icon: LucideIcons.layoutDashboard, label: 'الرئيسية'),
       const NavigationItem(icon: LucideIcons.calendar, label: 'التقويم'),
       NavigationItem(
         icon: LucideIcons.bell,

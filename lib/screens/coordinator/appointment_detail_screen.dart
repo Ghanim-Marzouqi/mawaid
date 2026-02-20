@@ -132,15 +132,15 @@ class _AppointmentDetailScreenState
   Future<void> _cancelAppointment() async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text(Strings.confirmCancel),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text(Strings.cancel),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dialogContext, true),
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             child: const Text(Strings.confirm),
           ),
@@ -177,15 +177,15 @@ class _AppointmentDetailScreenState
   Future<void> _deleteAppointment() async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text(Strings.confirmDelete),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text(Strings.cancel),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dialogContext, true),
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             child: const Text(Strings.confirm),
           ),
@@ -260,6 +260,10 @@ class _AppointmentDetailScreenState
     final canDelete = !isMinistry &&
         appointment.status == AppointmentStatus.pending;
 
+    final canEdit = !isMinistry &&
+        (appointment.status == AppointmentStatus.pending ||
+            appointment.status == AppointmentStatus.confirmed);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(Strings.appointmentDetails),
@@ -267,6 +271,14 @@ class _AppointmentDetailScreenState
           icon: const Icon(LucideIcons.arrowRight),
           onPressed: () => context.pop(),
         ),
+        actions: [
+          if (canEdit)
+            IconButton(
+              icon: const Icon(LucideIcons.pencil, size: 20),
+              tooltip: Strings.edit,
+              onPressed: () => context.push('/coordinator/edit/${widget.id}'),
+            ),
+        ],
       ),
       body: Center(
         child: ConstrainedBox(

@@ -19,109 +19,158 @@ class AppointmentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border(
-              right: BorderSide(
-                color: _typeColor,
-                width: 4,
-              ),
-            ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Colors.grey.withValues(alpha: 0.12),
           ),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: IntrinsicHeight(
+          child: Row(
             children: [
-              Row(
-                children: [
-                  Icon(_typeIcon, size: 18, color: _typeColor),
-                  const SizedBox(width: 8),
-                  Text(
-                    _typeLabel,
-                    style: TextStyle(
-                      color: _typeColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
+              // Color accent bar
+              Container(
+                width: 4,
+                decoration: BoxDecoration(
+                  color: _typeColor,
+                  borderRadius: const BorderRadiusDirectional.only(
+                    topStart: Radius.circular(12),
+                    bottomStart: Radius.circular(12),
                   ),
-                  const Spacer(),
-                  StatusBadge(status: appointment.status),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                appointment.title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Icon(
-                    LucideIcons.clock,
-                    size: 14,
-                    color: AppColors.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    formatTimeRange(
-                        appointment.startTime, appointment.endTime),
-                    style: const TextStyle(
-                      color: AppColors.onSurfaceVariant,
-                      fontSize: 13,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  const Icon(
-                    LucideIcons.calendarDays,
-                    size: 14,
-                    color: AppColors.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 4),
-                  Flexible(
-                    child: Text(
-                      formatShortDate(appointment.startTime),
-                      style: const TextStyle(
-                        color: AppColors.onSurfaceVariant,
-                        fontSize: 13,
+              // Content
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 22,
+                            height: 22,
+                            decoration: BoxDecoration(
+                              color: _typeColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child:
+                                Icon(_typeIcon, size: 13, color: _typeColor),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _typeLabel,
+                            style: TextStyle(
+                              color: _typeColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const Spacer(),
+                          StatusBadge(status: appointment.status),
+                        ],
                       ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-              if (appointment.location != null &&
-                  appointment.location!.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(
-                      LucideIcons.mapPin,
-                      size: 14,
-                      color: AppColors.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 4),
-                    Flexible(
-                      child: Text(
-                        appointment.location!,
+                      const SizedBox(height: 8),
+                      Text(
+                        appointment.title,
                         style: const TextStyle(
-                          color: AppColors.onSurfaceVariant,
-                          fontSize: 13,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
                         ),
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            LucideIcons.clock,
+                            size: 13,
+                            color: AppColors.onSurfaceVariant
+                                .withValues(alpha: 0.6),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            formatTimeRange(
+                                appointment.startTime, appointment.endTime),
+                            style: TextStyle(
+                              color: AppColors.onSurfaceVariant
+                                  .withValues(alpha: 0.6),
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Icon(
+                            LucideIcons.calendarDays,
+                            size: 13,
+                            color: AppColors.onSurfaceVariant
+                                .withValues(alpha: 0.6),
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              formatShortDate(appointment.startTime),
+                              style: TextStyle(
+                                color: AppColors.onSurfaceVariant
+                                    .withValues(alpha: 0.6),
+                                fontSize: 12,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (appointment.location != null &&
+                          appointment.location!.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              LucideIcons.mapPin,
+                              size: 13,
+                              color: AppColors.onSurfaceVariant
+                                  .withValues(alpha: 0.6),
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                appointment.location!,
+                                style: TextStyle(
+                                  color: AppColors.onSurfaceVariant
+                                      .withValues(alpha: 0.6),
+                                  fontSize: 12,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-              ],
+              ),
+              // Chevron
+              Padding(
+                padding: const EdgeInsetsDirectional.only(end: 8),
+                child: Icon(
+                  LucideIcons.chevronLeft,
+                  size: 16,
+                  color: AppColors.onSurfaceVariant.withValues(alpha: 0.3),
+                ),
+              ),
             ],
           ),
         ),
@@ -138,7 +187,7 @@ class AppointmentCard extends StatelessWidget {
   IconData get _typeIcon => switch (appointment.type) {
         AppointmentType.ministry => LucideIcons.landmark,
         AppointmentType.patient => LucideIcons.userRound,
-        AppointmentType.external_ => LucideIcons.mapPin,
+        AppointmentType.external_ => LucideIcons.building2,
       };
 
   String get _typeLabel => switch (appointment.type) {

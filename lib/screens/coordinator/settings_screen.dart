@@ -22,67 +22,115 @@ class SettingsScreen extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    children: [
-                      CircleAvatar(
-                        radius: 40,
-                        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                        child: const Icon(
-                          LucideIcons.userRound,
-                          size: 32,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        profile?.fullName ?? '',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w500,
-                            ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        Strings.coordinatorRole,
-                        style: const TextStyle(
-                          color: AppColors.onSurfaceVariant,
-                        ),
-                      ),
+              // Profile card
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.primary.withValues(alpha: 0.08),
+                      AppColors.primary.withValues(alpha: 0.02),
                     ],
+                    begin: AlignmentDirectional.topStart,
+                    end: AlignmentDirectional.bottomEnd,
                   ),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.15),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    CircleAvatar(
+                      radius: 40,
+                      backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+                      child: const Icon(
+                        LucideIcons.userRound,
+                        size: 32,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      profile?.fullName ?? '',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text(
+                        Strings.coordinatorRole,
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 16),
-              Card(
+
+              // Info card
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: Colors.grey.withValues(alpha: 0.15),
+                  ),
+                ),
                 child: Column(
                   children: [
-                    ListTile(
-                      leading: const Icon(LucideIcons.mail),
-                      title: const Text(Strings.email),
-                      subtitle: Text(
-                        authState.session?.user.email ?? '',
-                        textAlign: TextAlign.right,
-                      ),
+                    _InfoRow(
+                      icon: LucideIcons.mail,
+                      label: Strings.email,
+                      value: authState.session?.user.email ?? '',
                     ),
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: const Icon(LucideIcons.shield),
-                      title: const Text(Strings.role),
-                      subtitle: const Text(Strings.coordinatorRole),
+                    Divider(
+                      height: 24,
+                      color: Colors.grey.withValues(alpha: 0.15),
+                    ),
+                    _InfoRow(
+                      icon: LucideIcons.shield,
+                      label: Strings.role,
+                      value: Strings.coordinatorRole,
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 24),
-              OutlinedButton.icon(
-                onPressed: () => _handleSignOut(context, ref),
-                icon: const Icon(LucideIcons.logOut, size: 16),
-                label: const Text(Strings.signOut),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.error,
-                  side: const BorderSide(color: AppColors.error),
+
+              // Sign out
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.03),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: AppColors.error.withValues(alpha: 0.1),
+                  ),
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _handleSignOut(context, ref),
+                    icon: const Icon(LucideIcons.logOut, size: 16),
+                    label: const Text(Strings.signOut),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.error,
+                      side: const BorderSide(color: AppColors.error),
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -93,7 +141,6 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Future<void> _handleSignOut(BuildContext context, WidgetRef ref) async {
-    // Capture the router BEFORE any async gaps
     final router = GoRouter.of(context);
 
     final confirmed = await showDialog<bool>(
@@ -114,10 +161,50 @@ class SettingsScreen extends ConsumerWidget {
     );
     if (confirmed != true) return;
 
-    // Sign out (clears Supabase session + local state)
     await ref.read(authProvider.notifier).signOut();
-
-    // Navigate explicitly — the router reference is still valid
     router.go('/login');
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: AppColors.primary),
+        const SizedBox(width: 10),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.onSurfaceVariant.withValues(alpha: 0.7),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
   }
 }

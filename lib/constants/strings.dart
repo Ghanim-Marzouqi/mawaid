@@ -67,7 +67,7 @@ class Strings {
   static const todaySchedule = 'جدول اليوم';
 
   // Manager
-  static const pendingQueue = 'بانتظار';
+  static const pendingQueue = 'الرئيسية';
 
   // Errors
   static const conflictMinistry =

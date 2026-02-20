@@ -34,8 +34,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       return start.year == now.year &&
           start.month == now.month &&
           start.day == now.day &&
-          a.status != AppointmentStatus.cancelled &&
-          a.status != AppointmentStatus.rejected;
+          a.status != AppointmentStatus.cancelled;
     }).toList()
       ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
@@ -44,6 +43,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         .length;
     final confirmedCount = state.appointments
         .where((a) => a.status == AppointmentStatus.confirmed)
+        .length;
+    final rejectedCount = state.appointments
+        .where((a) => a.status == AppointmentStatus.rejected)
         .length;
 
     return Scaffold(
@@ -90,14 +92,44 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               icon: LucideIcons.circleCheck,
                             ),
                           ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _StatCard(
+                              label: Strings.rejected,
+                              count: rejectedCount,
+                              color: AppColors.rejected,
+                              icon: LucideIcons.circleX,
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 24),
-                      Text(
-                        Strings.todaySchedule,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w500,
+                      Row(
+                        children: [
+                          Text(
+                            Strings.todaySchedule,
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(6),
                             ),
+                            child: Text(
+                              '${todayAppointments.length} مواعيد',
+                              style: const TextStyle(
+                                color: AppColors.primary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -113,11 +145,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 48),
                           child: Column(
                             children: [
-                              const Icon(LucideIcons.calendarOff, size: 48, color: AppColors.onSurfaceVariant),
+                              Container(
+                                width: 56,
+                                height: 56,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withValues(alpha: 0.06),
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: const Icon(
+                                  LucideIcons.calendarOff,
+                                  size: 28,
+                                  color: AppColors.onSurfaceVariant,
+                                ),
+                              ),
                               const SizedBox(height: 12),
                               const Text(
                                 Strings.noAppointments,
-                                style: TextStyle(color: AppColors.onSurfaceVariant),
+                                style: TextStyle(
+                                  color: AppColors.onSurfaceVariant,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ],
                           ),
@@ -154,36 +202,56 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, size: 20, color: color),
-                const Spacer(),
-                Text(
-                  '$count',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w700,
-                    color: color,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: const TextStyle(
-                color: AppColors.onSurfaceVariant,
-                fontSize: 13,
-              ),
-            ),
-          ],
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.grey.withValues(alpha: 0.12),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, size: 18, color: color),
+              ),
+              const Spacer(),
+              Text(
+                '$count',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.onSurfaceVariant,
+              fontSize: 13,
+            ),
+          ),
+        ],
       ),
     );
   }
