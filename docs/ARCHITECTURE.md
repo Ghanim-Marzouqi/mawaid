@@ -960,21 +960,23 @@ lib/
 ├── router/
 │   └── app_router.dart          ← GoRouter configuration with auth redirect
 ├── screens/
-│   ├── login_screen.dart        ← Login screen
+│   ├── login_screen.dart        ← Login screen (custom logo, forgot password)
+│   ├── reset_password_screen.dart ← Reset password form (new password + confirm)
 │   ├── coordinator/
-│   │   ├── dashboard_screen.dart      ← Dashboard (today's appointments, pending count)
-│   │   ├── calendar_screen.dart       ← Full calendar view (month/week/day)
+│   │   ├── dashboard_screen.dart      ← Dashboard (today's schedule, stat cards: pending/confirmed/rejected)
+│   │   ├── calendar_screen.dart       ← Full calendar view (month/week/day), shows rejected
 │   │   ├── create_appointment_screen.dart ← Create new appointment form
+│   │   ├── edit_appointment_screen.dart   ← Edit existing appointment (pre-filled form)
 │   │   ├── appointment_detail_screen.dart ← Appointment detail (view, edit, accept/reject suggestion)
 │   │   ├── notifications_screen.dart  ← Notification list
-│   │   └── settings_screen.dart       ← Settings (account info, push token)
+│   │   └── settings_screen.dart       ← Settings (styled profile, info rows, sign out)
 │   ├── manager/
-│   │   ├── pending_queue_screen.dart  ← Pending queue (appointments awaiting action)
-│   │   ├── calendar_screen.dart       ← Full calendar view (read-only overview)
+│   │   ├── pending_queue_screen.dart  ← Dashboard (today's schedule + pending queue + stat cards)
+│   │   ├── calendar_screen.dart       ← Full calendar view (hides rejected/cancelled)
 │   │   ├── appointment_detail_screen.dart ← Appointment detail (approve, reject, suggest)
 │   │   ├── suggest_screen.dart        ← Suggest alternative time form
 │   │   ├── notifications_screen.dart  ← Notification list
-│   │   └── settings_screen.dart       ← Settings (account info, push token)
+│   │   └── settings_screen.dart       ← Settings (styled profile, info rows, sign out)
 │   └── not_found_screen.dart    ← 404 fallback
 ```
 
@@ -982,31 +984,33 @@ lib/
 
 #### Auth
 
-| Screen   | Route          | Description                                   |
-| :------- | :------------- | :-------------------------------------------- |
-| Login    | `/login`       | Email + password form. Redirects by role on success. |
+| Screen          | Route              | Description                                                        |
+| :-------------- | :----------------- | :----------------------------------------------------------------- |
+| Login           | `/login`           | Email + password form with custom logo and forgot password link. Redirects by role on success. |
+| Reset Password  | `/reset-password`  | New password + confirmation form. Reached via email recovery link. |
 
 #### Coordinator Screens
 
 | Screen              | Route                          | Description                                                        |
 | :------------------ | :----------------------------- | :----------------------------------------------------------------- |
-| Dashboard           | `/coordinator`                 | Today's agenda, count of pending/confirmed appointments.           |
-| Calendar            | `/coordinator/calendar`        | Month/week/day view of all appointments, color-coded by type.      |
+| Dashboard           | `/coordinator`                 | Today's schedule (excluding cancelled), stat cards (pending/confirmed/rejected). |
+| Calendar            | `/coordinator/calendar`        | Month/week/day view of all appointments, color-coded by type. Shows rejected appointments (dots + cards). |
 | Create Appointment  | `/coordinator/create`          | Form: title, type, date/time range, location/notes. Runs conflict check before submit. |
-| Appointment Detail  | `/coordinator/appointment/:id` | Full details. Shows suggestion if `status = 'suggested'`. Accept/reject suggestion buttons. Edit/cancel for non-ministry. |
+| Edit Appointment    | `/coordinator/edit/:id`        | Pre-filled form for editing non-ministry pending/confirmed appointments. Runs conflict check. |
+| Appointment Detail  | `/coordinator/appointment/:id` | Full details. Edit button (pencil) for non-ministry pending/confirmed. Shows suggestion if `status = 'suggested'`. Accept/reject suggestion buttons. |
 | Notifications       | `/coordinator/notifications`   | List of notifications with read/unread state.                      |
-| Settings            | `/coordinator/settings`        | Display name, role, sign out button.                               |
+| Settings            | `/coordinator/settings`        | Styled profile card with gradient, info rows with icons, styled sign-out section. |
 
 #### Manager Screens
 
 | Screen              | Route                          | Description                                                        |
 | :------------------ | :----------------------------- | :----------------------------------------------------------------- |
-| Pending Queue       | `/manager`                     | List of `pending` appointments sorted by `start_time`.             |
-| Calendar            | `/manager/calendar`            | Month/week/day view of all appointments (read-only overview).      |
+| Dashboard (الرئيسية) | `/manager`                    | Today's schedule + pending queue below. Stat cards (pending count + suggested count). |
+| Calendar            | `/manager/calendar`            | Month/week/day view. Hides rejected and cancelled appointments.    |
 | Appointment Detail  | `/manager/appointment/:id`     | Full details. Approve/reject/suggest buttons for `pending`. View-only for other statuses. |
 | Suggest Alternative | `/manager/suggest/:id`         | Date/time picker + optional message. Conflict check before submit. |
 | Notifications       | `/manager/notifications`       | List of notifications with read/unread state.                      |
-| Settings            | `/manager/settings`            | Display name, role, sign out button.                               |
+| Settings            | `/manager/settings`            | Styled profile card with gradient, info rows with icons, styled sign-out section. |
 
 ### 6.3 Navigation Flow
 
@@ -1018,6 +1022,8 @@ MaterialApp.router (GoRouter)
   │
   ├── No session? ──► /login
   │
+  ├── On /reset-password? ──► Stay (recovery session)
+  │
   └── Has session?
         │
         ├── Fetch profile → role = 'coordinator'
@@ -1025,6 +1031,12 @@ MaterialApp.router (GoRouter)
         │
         └── Fetch profile → role = 'manager'
               └──► Redirect to /manager
+
+Password Recovery Flow:
+  /login → "Forgot password?" → enter email → Supabase sends reset email
+  → User clicks link in email → redirects to app with recovery token
+  → App detects passwordRecovery event → navigates to /reset-password
+  → User enters new password → supabase.auth.updateUser() → /login
 ```
 
 ---
@@ -1139,6 +1151,19 @@ Push notifications are delivered via the **Web Push API** (using VAPID keys). A 
 supabase/functions/send-push/index.ts
 ```
 
+**VAPID Configuration:**
+
+The VAPID keys must be passed to the edge runtime via `supabase/config.toml`:
+
+```toml
+[edge_runtime.secrets]
+VAPID_PUBLIC_KEY = "env(VAPID_PUBLIC_KEY)"
+VAPID_PRIVATE_KEY = "env(VAPID_PRIVATE_KEY)"
+VAPID_SUBJECT = "env(VAPID_SUBJECT)"
+```
+
+These env vars must be set in the shell when running `supabase start`. The function-level `.env.local` file (`supabase/functions/.env.local`) holds the actual values for reference.
+
 **Flow:**
 
 1. On login, the Flutter web app requests notification permission via the browser's `Notification.requestPermission()` API, then subscribes to push via the service worker and stores the push subscription endpoint in `profiles.push_token`.
@@ -1146,6 +1171,8 @@ supabase/functions/send-push/index.ts
 3. A separate database trigger (or webhook) on `notifications` INSERT calls the `send-push` Edge Function.
 4. The Edge Function reads the recipient's `push_token` (Web Push subscription JSON) from `profiles`.
 5. If the token exists, it sends a Web Push notification using VAPID authentication.
+6. If the token is missing, the function returns `{ skipped: true }`.
+7. If the subscription is expired (HTTP 410), the function clears `push_token` from the profile.
 
 **Edge Function sketch:**
 
@@ -1747,11 +1774,13 @@ mawaid/
 │   │   └── realtime_service.dart
 │   ├── screens/
 │   │   ├── login_screen.dart
+│   │   ├── reset_password_screen.dart
 │   │   ├── not_found_screen.dart
 │   │   ├── coordinator/
 │   │   │   ├── dashboard_screen.dart
 │   │   │   ├── calendar_screen.dart
 │   │   │   ├── create_appointment_screen.dart
+│   │   │   ├── edit_appointment_screen.dart
 │   │   │   ├── appointment_detail_screen.dart
 │   │   │   ├── notifications_screen.dart
 │   │   │   └── settings_screen.dart
@@ -1936,6 +1965,21 @@ supabase.auth.signInWithPassword(email: email, password: password)
     manager     → /manager
 ```
 
+### 13.2.1 Forgot Password Flow
+
+The login screen includes a "نسيت كلمة المرور؟" link. When tapped:
+
+1. A dialog prompts for the user's email address.
+2. `supabase.auth.resetPasswordForEmail(email)` sends a recovery email.
+3. In local dev, the email arrives in **Inbucket** (`http://localhost:54324`).
+4. The email contains a link to `site_url` (configured as `http://127.0.0.1:8080` in `config.toml`).
+5. Supabase appends a recovery token as a URL hash fragment.
+6. The Supabase Flutter SDK detects the `AuthChangeEvent.passwordRecovery` event.
+7. The app listens for this event in `MawaidApp.initState()` and navigates to `/reset-password`.
+8. The `ResetPasswordScreen` shows new password + confirmation fields.
+9. On submit, `supabase.auth.updateUser(UserAttributes(password: newPassword))` updates the password.
+10. On success, the user is redirected to `/login`.
+
 ### 13.3 Session Persistence
 
 ```dart
@@ -2046,18 +2090,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       final isLoggedIn = authState.session != null;
       final isOnLogin = state.matchedLocation == '/login';
+      final isOnReset = state.matchedLocation == '/reset-password';
 
-      if (!isLoggedIn && !isOnLogin) return '/login';
+      if (!isLoggedIn && !isOnLogin && !isOnReset) return '/login';
 
-      if (isLoggedIn && authState.profile != null) {
-        final role = authState.profile!.role;
-        final targetPrefix = '/$role';
+      if (isLoggedIn) {
+        // Allow staying on reset-password even when logged in (recovery session)
+        if (isOnReset) return null;
 
-        if (isOnLogin) return targetPrefix;
+        if (authState.profile != null) {
+          final role = authState.profile!.role;
+          final targetPrefix = '/$role';
 
-        // Prevent cross-role access
-        if (!state.matchedLocation.startsWith(targetPrefix)) {
-          return targetPrefix;
+          if (isOnLogin) return targetPrefix;
+
+          // Prevent cross-role access
+          if (!state.matchedLocation.startsWith(targetPrefix)) {
+            return targetPrefix;
+          }
         }
       }
 
@@ -2065,6 +2115,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
+      GoRoute(path: '/reset-password', builder: (_, __) => const ResetPasswordScreen()),
       // Coordinator routes
       ShellRoute(
         builder: (_, __, child) => CoordinatorShell(child: child),
@@ -2072,6 +2123,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/coordinator', builder: (_, __) => const DashboardScreen()),
           GoRoute(path: '/coordinator/calendar', builder: (_, __) => const CalendarScreen()),
           GoRoute(path: '/coordinator/create', builder: (_, __) => const CreateAppointmentScreen()),
+          GoRoute(path: '/coordinator/edit/:id', builder: (_, state) =>
+            EditAppointmentScreen(id: state.pathParameters['id']!)),
           GoRoute(path: '/coordinator/appointment/:id', builder: (_, state) =>
             AppointmentDetailScreen(id: state.pathParameters['id']!)),
           GoRoute(path: '/coordinator/notifications', builder: (_, __) => const NotificationsScreen()),
@@ -2260,13 +2313,16 @@ Access Studio at `http://localhost:54323` (or the server URL in production) to:
 
 #### Auth
 - [ ] Login with valid coordinator credentials → redirects to coordinator dashboard
-- [ ] Login with valid manager credentials → redirects to manager pending queue
+- [ ] Login with valid manager credentials → redirects to manager dashboard
 - [ ] Login with wrong password → shows Arabic error
 - [ ] Login with non-existent email → shows Arabic error
 - [ ] App restart → session persists, auto-redirects to correct screen
 - [ ] Sign out → redirects to login, session cleared
 - [ ] Access coordinator route as manager → redirected to manager route
 - [ ] Access manager route as coordinator → redirected to coordinator route
+- [ ] Forgot password → enter email → reset email sent → check Inbucket
+- [ ] Click reset link in email → app navigates to reset password screen
+- [ ] Enter new password + confirmation → password updated → redirected to login
 
 #### Appointment CRUD (Coordinator)
 - [ ] Create ministry meeting → status auto-set to `confirmed`
@@ -2278,7 +2334,7 @@ Access Studio at `http://localhost:54323` (or the server URL in production) to:
 - [ ] Cannot delete a confirmed appointment → UI prevents it
 
 #### Approval Workflow (Manager)
-- [ ] Pending queue shows only `pending` appointments
+- [ ] Manager dashboard shows today's schedule + pending queue below
 - [ ] Approve appointment → status changes to `confirmed`
 - [ ] Reject appointment → status changes to `rejected`
 - [ ] Suggest alternative → status changes to `suggested`, suggestion row created
@@ -2325,6 +2381,10 @@ Access Studio at `http://localhost:54323` (or the server URL in production) to:
 - [ ] Day view shows appointment blocks
 - [ ] Appointments color-coded by type
 - [ ] Tapping appointment → navigates to detail
+- [ ] Coordinator calendar shows rejected appointments (dots + cards)
+- [ ] Manager calendar hides rejected and cancelled appointments
+- [ ] Coordinator dashboard shows rejected appointments in today's schedule
+- [ ] Manager dashboard hides rejected appointments from today's schedule
 
 #### Web / PWA
 - [ ] App loads correctly in Chrome, Safari, Firefox
@@ -2349,6 +2409,10 @@ Access Studio at `http://localhost:54323` (or the server URL in production) to:
 5. **Suggestion rejection cycle**: Coordinator creates → Manager suggests → Coordinator rejects suggestion → appointment back to pending → Manager suggests again → Coordinator accepts.
 
 6. **Conflict detection**: Coordinator creates ministry meeting 9:00–10:00 → Coordinator tries to create patient appointment 9:30–10:30 → warning shown (non-ministry overlap allowed) → Coordinator tries to create another ministry meeting 9:00–10:00 → hard block.
+
+7. **Edit appointment**: Coordinator opens pending/confirmed non-ministry appointment detail → taps pencil icon → form pre-filled → edits time → conflict check → save → appointment updated → snackbar shown.
+
+8. **Password recovery**: User taps "نسيت كلمة المرور؟" on login → enters email → reset email sent to Inbucket → clicks link → app navigates to reset screen → enters new password → password updated → redirected to login.
 
 ### 15.3 Database Verification Queries
 
