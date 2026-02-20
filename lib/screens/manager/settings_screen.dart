@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../constants/strings.dart';
 import '../../providers/auth_provider.dart';
@@ -62,7 +63,7 @@ class SettingsScreen extends ConsumerWidget {
                       title: const Text(Strings.email),
                       subtitle: Text(
                         authState.session?.user.email ?? '',
-                        textDirection: TextDirection.ltr,
+                        textAlign: TextAlign.right,
                       ),
                     ),
                     const Divider(height: 1),
@@ -76,27 +77,7 @@ class SettingsScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 24),
               OutlinedButton.icon(
-                onPressed: () async {
-                  final confirmed = await showDialog<bool>(
-                    context: context,
-                    builder: (_) => AlertDialog(
-                      title: const Text(Strings.confirmSignOut),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text(Strings.cancel),
-                        ),
-                        ElevatedButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: const Text(Strings.signOut),
-                        ),
-                      ],
-                    ),
-                  );
-                  if (confirmed == true) {
-                    ref.read(authProvider.notifier).signOut();
-                  }
-                },
+                onPressed: () => _handleSignOut(context, ref),
                 icon: const Icon(LucideIcons.logOut, size: 16),
                 label: const Text(Strings.signOut),
                 style: OutlinedButton.styleFrom(
@@ -109,5 +90,34 @@ class SettingsScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _handleSignOut(BuildContext context, WidgetRef ref) async {
+    // Capture the router BEFORE any async gaps
+    final router = GoRouter.of(context);
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text(Strings.confirmSignOut),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text(Strings.cancel),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text(Strings.signOut),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    // Sign out (clears Supabase session + local state)
+    await ref.read(authProvider.notifier).signOut();
+
+    // Navigate explicitly — the router reference is still valid
+    router.go('/login');
   }
 }

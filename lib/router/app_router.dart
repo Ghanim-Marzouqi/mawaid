@@ -19,13 +19,25 @@ import '../screens/manager/suggest_screen.dart';
 import '../screens/manager/notifications_screen.dart' as mgr_notif;
 import '../screens/manager/settings_screen.dart' as mgr_settings;
 
+/// Bridges Riverpod auth state changes to a [Listenable] so GoRouter
+/// re-evaluates its redirect WITHOUT being recreated.
+class _AuthRefreshNotifier extends ChangeNotifier {
+  _AuthRefreshNotifier(Ref ref) {
+    ref.listen<AuthState>(authProvider, (_, __) {
+      notifyListeners();
+    });
+  }
+}
+
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
+  final refreshNotifier = _AuthRefreshNotifier(ref);
+  ref.onDispose(() => refreshNotifier.dispose());
 
   return GoRouter(
     initialLocation: '/login',
-    refreshListenable: _AuthRefreshListenable(ref),
+    refreshListenable: refreshNotifier,
     redirect: (context, state) {
+      final authState = ref.read(authProvider);
       if (authState.isLoading) return null;
 
       final isLoggedIn = authState.session != null;
@@ -35,7 +47,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       if (isLoggedIn) {
         if (authState.profile == null) {
-          // Profile still loading, stay on current route
           return null;
         }
 
@@ -124,9 +135,3 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     errorBuilder: (_, __) => const NotFoundScreen(),
   );
 });
-
-class _AuthRefreshListenable extends ChangeNotifier {
-  _AuthRefreshListenable(Ref ref) {
-    ref.listen(authProvider, (_, __) => notifyListeners());
-  }
-}
