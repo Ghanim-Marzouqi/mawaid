@@ -38,8 +38,8 @@ class Strings {
   static const approve = 'موافقة';
   static const reject = 'رفض';
   static const suggestAlternative = 'اقتراح وقت بديل';
-  static const acceptSuggestion = 'قبول الاقتراح';
-  static const rejectSuggestion = 'رفض الاقتراح';
+  static const acceptSuggestion = 'قبول';
+  static const rejectSuggestion = 'رفض';
   static const cancel = 'إلغاء';
   static const save = 'حفظ';
   static const create = 'إنشاء';

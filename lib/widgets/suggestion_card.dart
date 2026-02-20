@@ -20,7 +20,12 @@ class SuggestionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: AppColors.suggested.withValues(alpha: 0.06),
+      elevation: 0,
+      color: AppColors.primary.withValues(alpha: 0.06),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: AppColors.primary.withValues(alpha: 0.18)),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

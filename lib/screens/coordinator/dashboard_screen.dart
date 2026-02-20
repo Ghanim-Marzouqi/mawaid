@@ -73,9 +73,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   child: ListView(
                     padding: const EdgeInsets.all(16),
                     children: [
-                      Row(
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
                         children: [
-                          Expanded(
+                          SizedBox(
+                            width: (MediaQuery.of(context).size.width - 44) / 2,
                             child: _StatCard(
                               label: Strings.pendingCount,
                               count: pendingCount,
@@ -83,8 +86,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               icon: LucideIcons.clock,
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
+                          SizedBox(
+                            width: (MediaQuery.of(context).size.width - 44) / 2,
                             child: _StatCard(
                               label: Strings.confirmedCount,
                               count: confirmedCount,
@@ -92,8 +95,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               icon: LucideIcons.circleCheck,
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
+                          SizedBox(
+                            width: (MediaQuery.of(context).size.width - 44) / 2,
                             child: _StatCard(
                               label: Strings.rejected,
                               count: rejectedCount,
