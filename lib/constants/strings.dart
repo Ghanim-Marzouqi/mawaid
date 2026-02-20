@@ -10,6 +10,17 @@ class Strings {
   static const password = 'كلمة المرور';
   static const loginButton = 'دخول';
   static const loginError = 'البريد أو كلمة المرور غير صحيحة';
+  static const forgotPassword = 'نسيت كلمة المرور؟';
+  static const resetPasswordSent = 'تم إرسال رابط إعادة تعيين كلمة المرور';
+  static const resetPasswordError = 'تعذر إرسال رابط إعادة التعيين';
+  static const enterEmailForReset = 'أدخل بريدك الإلكتروني لإعادة تعيين كلمة المرور';
+  static const send = 'إرسال';
+  static const resetPassword = 'إعادة تعيين كلمة المرور';
+  static const newPassword = 'كلمة المرور الجديدة';
+  static const confirmPassword = 'تأكيد كلمة المرور';
+  static const passwordsDoNotMatch = 'كلمات المرور غير متطابقة';
+  static const passwordResetSuccess = 'تم تغيير كلمة المرور بنجاح';
+  static const passwordResetError = 'تعذر تغيير كلمة المرور';
 
   // Appointment types
   static const ministry = 'إجتماع وزارة';

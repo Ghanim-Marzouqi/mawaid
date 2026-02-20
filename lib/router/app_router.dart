@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 import '../screens/login_screen.dart';
 import '../screens/not_found_screen.dart';
+import '../screens/reset_password_screen.dart';
 import '../screens/coordinator/coordinator_shell.dart';
 import '../screens/coordinator/dashboard_screen.dart';
 import '../screens/coordinator/calendar_screen.dart' as coord;
@@ -43,10 +44,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       final isLoggedIn = authState.session != null;
       final isOnLogin = state.matchedLocation == '/login';
+      final isOnReset = state.matchedLocation == '/reset-password';
 
-      if (!isLoggedIn && !isOnLogin) return '/login';
+      if (!isLoggedIn && !isOnLogin && !isOnReset) return '/login';
 
       if (isLoggedIn) {
+        // Allow staying on reset-password even when logged in (recovery session)
+        if (isOnReset) return null;
+
         if (authState.profile == null) {
           return null;
         }
@@ -67,6 +72,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/login',
         builder: (_, __) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/reset-password',
+        builder: (_, __) => const ResetPasswordScreen(),
       ),
       ShellRoute(
         builder: (_, __, child) => CoordinatorShell(child: child),

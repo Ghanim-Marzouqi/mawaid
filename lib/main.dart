@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'theme/app_theme.dart';
 import 'utils/format_date.dart';
 import 'services/supabase_service.dart';
@@ -25,11 +26,27 @@ void main() async {
   );
 }
 
-class MawaidApp extends ConsumerWidget {
+class MawaidApp extends ConsumerStatefulWidget {
   const MawaidApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MawaidApp> createState() => _MawaidAppState();
+}
+
+class _MawaidAppState extends ConsumerState<MawaidApp> {
+  @override
+  void initState() {
+    super.initState();
+    supabase.auth.onAuthStateChange.listen((data) {
+      if (data.event == AuthChangeEvent.passwordRecovery) {
+        final router = ref.read(appRouterProvider);
+        router.go('/reset-password');
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final router = ref.watch(appRouterProvider);
 
     return MaterialApp.router(
