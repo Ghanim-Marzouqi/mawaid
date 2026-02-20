@@ -55,7 +55,6 @@ class _AppointmentDetailScreenState
     if (_suggestion == null) return;
     setState(() => _actionLoading = true);
     try {
-      // Check conflicts for the suggested time
       final conflicts = await ref
           .read(appointmentProvider.notifier)
           .checkConflicts(
@@ -221,6 +220,24 @@ class _AppointmentDetailScreenState
     }
   }
 
+  Color _typeColor(AppointmentType type) => switch (type) {
+        AppointmentType.ministry => AppColors.ministry,
+        AppointmentType.patient => AppColors.patient,
+        AppointmentType.external_ => AppColors.external_,
+      };
+
+  IconData _typeIcon(AppointmentType type) => switch (type) {
+        AppointmentType.ministry => LucideIcons.landmark,
+        AppointmentType.patient => LucideIcons.userRound,
+        AppointmentType.external_ => LucideIcons.building2,
+      };
+
+  String _typeLabel(AppointmentType type) => switch (type) {
+        AppointmentType.ministry => Strings.ministry,
+        AppointmentType.patient => Strings.patient,
+        AppointmentType.external_ => Strings.external_,
+      };
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(appointmentProvider);
@@ -235,6 +252,7 @@ class _AppointmentDetailScreenState
       );
     }
 
+    final typeColor = _typeColor(appointment.type);
     final isMinistry = appointment.type == AppointmentType.ministry;
     final canCancel = !isMinistry &&
         (appointment.status == AppointmentStatus.pending ||
@@ -256,56 +274,151 @@ class _AppointmentDetailScreenState
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              _DetailRow(
-                icon: _typeIcon(appointment.type),
-                iconColor: _typeColor(appointment.type),
-                label: _typeLabel(appointment.type),
-                child: StatusBadge(status: appointment.status),
-              ),
-              const Divider(height: 32),
-              Text(
-                appointment.title,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w500,
+              // --- Header card with type + status ---
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      typeColor.withValues(alpha: 0.08),
+                      typeColor.withValues(alpha: 0.02),
+                    ],
+                    begin: AlignmentDirectional.topStart,
+                    end: AlignmentDirectional.bottomEnd,
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: typeColor.withValues(alpha: 0.15)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: typeColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(_typeIcon(appointment.type),
+                              size: 20, color: typeColor),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          _typeLabel(appointment.type),
+                          style: TextStyle(
+                            color: typeColor,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const Spacer(),
+                        StatusBadge(status: appointment.status),
+                      ],
                     ),
+                    const SizedBox(height: 14),
+                    Text(
+                      appointment.title,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
-              _DetailRow(
-                icon: LucideIcons.calendar,
-                iconColor: AppColors.onSurfaceVariant,
-                label: formatDate(appointment.startTime),
-              ),
-              const SizedBox(height: 8),
-              _DetailRow(
-                icon: LucideIcons.clock,
-                iconColor: AppColors.onSurfaceVariant,
-                label: formatTimeRange(appointment.startTime, appointment.endTime),
-              ),
-              if (appointment.location != null &&
-                  appointment.location!.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                _DetailRow(
-                  icon: LucideIcons.mapPin,
-                  iconColor: AppColors.onSurfaceVariant,
-                  label: appointment.location!,
+
+              // --- Date & time card ---
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: Colors.grey.withValues(alpha: 0.15),
+                  ),
                 ),
-              ],
+                child: Column(
+                  children: [
+                    _InfoRow(
+                      icon: LucideIcons.calendarDays,
+                      label: 'التاريخ',
+                      value: formatDate(appointment.startTime),
+                    ),
+                    Divider(
+                      height: 24,
+                      color: Colors.grey.withValues(alpha: 0.15),
+                    ),
+                    _InfoRow(
+                      icon: LucideIcons.clock,
+                      label: 'الوقت',
+                      value: formatTimeRange(
+                          appointment.startTime, appointment.endTime),
+                    ),
+                    if (appointment.location != null &&
+                        appointment.location!.isNotEmpty) ...[
+                      Divider(
+                        height: 24,
+                        color: Colors.grey.withValues(alpha: 0.15),
+                      ),
+                      _InfoRow(
+                        icon: LucideIcons.mapPin,
+                        label: Strings.location,
+                        value: appointment.location!,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+              // --- Notes section ---
               if (appointment.notes != null &&
                   appointment.notes!.isNotEmpty) ...[
                 const SizedBox(height: 16),
-                Text(
-                  Strings.notes,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.onSurfaceVariant,
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: Colors.grey.withValues(alpha: 0.15),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(LucideIcons.notepadText,
+                              size: 16,
+                              color: AppColors.onSurfaceVariant),
+                          const SizedBox(width: 6),
+                          Text(
+                            Strings.notes,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                              color: AppColors.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        appointment.notes!,
+                        style: const TextStyle(fontSize: 14, height: 1.6),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(appointment.notes!),
               ],
+
+              // --- Suggestion section ---
               if (appointment.status == AppointmentStatus.suggested &&
                   !_loadingSuggestion) ...[
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
                 if (_suggestion != null)
                   SuggestionCard(
                     suggestion: _suggestion!,
@@ -313,9 +426,30 @@ class _AppointmentDetailScreenState
                     onReject: _actionLoading ? null : _rejectSuggestion,
                   )
                 else
-                  const Text(
-                    'لا يوجد اقتراح نشط',
-                    style: TextStyle(color: AppColors.onSurfaceVariant),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.suggested.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: AppColors.suggested.withValues(alpha: 0.15),
+                      ),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(LucideIcons.info,
+                            size: 16, color: AppColors.suggested),
+                        SizedBox(width: 8),
+                        Text(
+                          'لا يوجد اقتراح نشط',
+                          style: TextStyle(
+                            color: AppColors.suggested,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
               ],
               if (_loadingSuggestion)
@@ -323,79 +457,156 @@ class _AppointmentDetailScreenState
                   padding: EdgeInsets.symmetric(vertical: 24),
                   child: Center(child: CircularProgressIndicator()),
                 ),
-              const SizedBox(height: 24),
-              if (canCancel)
-                OutlinedButton.icon(
-                  onPressed: _actionLoading ? null : _cancelAppointment,
-                  icon: const Icon(LucideIcons.x, size: 16),
-                  label: const Text(Strings.cancel),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.error,
-                    side: const BorderSide(color: AppColors.error),
+
+              // --- Actions ---
+              if (canCancel || canDelete) ...[
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.03),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: AppColors.error.withValues(alpha: 0.1),
+                    ),
                   ),
-                ),
-              if (canDelete) ...[
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: _actionLoading ? null : _deleteAppointment,
-                  icon: const Icon(LucideIcons.trash2, size: 16),
-                  label: const Text(Strings.delete),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.error,
-                    side: const BorderSide(color: AppColors.error),
+                  child: Column(
+                    children: [
+                      if (canCancel)
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed:
+                                _actionLoading ? null : _cancelAppointment,
+                            icon: const Icon(LucideIcons.x, size: 16),
+                            label: const Text(Strings.cancel),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.error,
+                              side: const BorderSide(color: AppColors.error),
+                            ),
+                          ),
+                        ),
+                      if (canCancel && canDelete) const SizedBox(height: 8),
+                      if (canDelete)
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed:
+                                _actionLoading ? null : _deleteAppointment,
+                            icon: const Icon(LucideIcons.trash2, size: 16),
+                            label: const Text(Strings.delete),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.error,
+                              side: const BorderSide(color: AppColors.error),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ],
+              const SizedBox(height: 24),
+
+              // --- Metadata ---
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    _MetaRow(
+                      label: 'تاريخ الإنشاء',
+                      value: formatDateTime(appointment.createdAt),
+                    ),
+                    if (appointment.reviewedAt != null) ...[
+                      const SizedBox(height: 6),
+                      _MetaRow(
+                        label: 'تاريخ المراجعة',
+                        value: formatDateTime(appointment.reviewedAt!),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
             ],
           ),
         ),
       ),
     );
   }
-
-  Color _typeColor(AppointmentType type) => switch (type) {
-        AppointmentType.ministry => AppColors.ministry,
-        AppointmentType.patient => AppColors.patient,
-        AppointmentType.external_ => AppColors.external_,
-      };
-
-  IconData _typeIcon(AppointmentType type) => switch (type) {
-        AppointmentType.ministry => LucideIcons.landmark,
-        AppointmentType.patient => LucideIcons.userRound,
-        AppointmentType.external_ => LucideIcons.mapPin,
-      };
-
-  String _typeLabel(AppointmentType type) => switch (type) {
-        AppointmentType.ministry => Strings.ministry,
-        AppointmentType.patient => Strings.patient,
-        AppointmentType.external_ => Strings.external_,
-      };
 }
 
-class _DetailRow extends StatelessWidget {
+class _InfoRow extends StatelessWidget {
   final IconData icon;
-  final Color iconColor;
   final String label;
-  final Widget? child;
+  final String value;
 
-  const _DetailRow({
+  const _InfoRow({
     required this.icon,
-    required this.iconColor,
     required this.label,
-    this.child,
+    required this.value,
   });
 
   @override
   Widget build(BuildContext context) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 18, color: iconColor),
-        const SizedBox(width: 8),
-        Text(label, style: const TextStyle(fontSize: 14)),
-        if (child != null) ...[
-          const Spacer(),
-          child!,
-        ],
+        Icon(icon, size: 18, color: AppColors.primary),
+        const SizedBox(width: 10),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.onSurfaceVariant.withValues(alpha: 0.7),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _MetaRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _MetaRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: AppColors.onSurfaceVariant.withValues(alpha: 0.6),
+          ),
+        ),
+        const Spacer(),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 12,
+            color: AppColors.onSurfaceVariant.withValues(alpha: 0.6),
+          ),
+        ),
       ],
     );
   }

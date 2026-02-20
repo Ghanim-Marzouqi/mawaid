@@ -50,9 +50,7 @@ final appTheme = ThemeData(
       backgroundColor: AppColors.primary,
       foregroundColor: Colors.white,
       minimumSize: const Size(double.infinity, 48),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       textStyle: const TextStyle(
         fontFamily: 'ReadexPro',
         fontSize: 16,
@@ -64,9 +62,7 @@ final appTheme = ThemeData(
     style: OutlinedButton.styleFrom(
       foregroundColor: AppColors.primary,
       minimumSize: const Size(double.infinity, 48),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       side: const BorderSide(color: AppColors.primary),
       textStyle: const TextStyle(
         fontFamily: 'ReadexPro',
@@ -92,10 +88,7 @@ final appTheme = ThemeData(
     backgroundColor: AppColors.surface,
     indicatorColor: Color(0x331B5E7B),
     useIndicator: true,
-    selectedIconTheme: IconThemeData(
-      color: AppColors.primary,
-      size: 24,
-    ),
+    selectedIconTheme: IconThemeData(color: AppColors.primary, size: 24),
     unselectedIconTheme: IconThemeData(
       color: AppColors.onSurfaceVariant,
       size: 22,
@@ -143,13 +136,36 @@ final appTheme = ThemeData(
   ),
   snackBarTheme: SnackBarThemeData(
     behavior: SnackBarBehavior.floating,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(8),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+  ),
+  datePickerTheme: DatePickerThemeData(
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    headerHeadlineStyle: const TextStyle(
+      fontFamily: 'ReadexPro',
+      fontSize: 18,
+      fontWeight: FontWeight.w600,
+    ),
+    headerHelpStyle: const TextStyle(fontFamily: 'ReadexPro', fontSize: 14),
+    weekdayStyle: const TextStyle(
+      fontFamily: 'ReadexPro',
+      fontSize: 12,
+      fontWeight: FontWeight.w600,
+      color: AppColors.onSurfaceVariant,
+    ),
+    dayStyle: const TextStyle(fontFamily: 'ReadexPro', fontSize: 13),
+    yearStyle: const TextStyle(fontFamily: 'ReadexPro', fontSize: 13),
+  ),
+  timePickerTheme: TimePickerThemeData(
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    dayPeriodBorderSide: BorderSide.none,
+    helpTextStyle: const TextStyle(fontFamily: 'ReadexPro', fontSize: 14),
+    hourMinuteTextStyle: const TextStyle(
+      fontFamily: 'ReadexPro',
+      fontSize: 32,
+      fontWeight: FontWeight.w500,
     ),
   ),
   dialogTheme: DialogThemeData(
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(16),
-    ),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
   ),
 );

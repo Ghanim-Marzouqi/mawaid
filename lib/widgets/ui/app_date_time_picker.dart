@@ -21,6 +21,7 @@ Future<DateTime?> showAppDateTimePicker(
   final time = await showTimePicker(
     context: context,
     initialTime: TimeOfDay.fromDateTime(initialDate ?? now),
+    initialEntryMode: TimePickerEntryMode.dialOnly,
   );
   if (time == null) return null;
 

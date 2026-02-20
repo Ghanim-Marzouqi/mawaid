@@ -47,6 +47,7 @@ class _SuggestScreenState extends ConsumerState<SuggestScreen> {
     final time = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(initialDate),
+      initialEntryMode: TimePickerEntryMode.dialOnly,
     );
     if (time == null || !mounted) return;
 

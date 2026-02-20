@@ -45,81 +45,159 @@ class _CalendarViewState extends State<CalendarView> {
 
   @override
   Widget build(BuildContext context) {
-    return TableCalendar<Appointment>(
-      locale: 'ar_OM',
-      firstDay: DateTime.utc(2024, 1, 1),
-      lastDay: DateTime.utc(2030, 12, 31),
-      focusedDay: _focusedDay,
-      calendarFormat: _calendarFormat,
-      startingDayOfWeek: StartingDayOfWeek.saturday,
-      availableCalendarFormats: const {
-        CalendarFormat.month: 'شهر',
-        CalendarFormat.twoWeeks: 'أسبوعين',
-        CalendarFormat.week: 'أسبوع',
-      },
-      selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-      eventLoader: _getEventsForDay,
-      onDaySelected: (selectedDay, focusedDay) {
-        setState(() {
-          _selectedDay = selectedDay;
-          _focusedDay = focusedDay;
-        });
-        widget.onDaySelected(selectedDay);
-      },
-      onFormatChanged: (format) {
-        setState(() => _calendarFormat = format);
-      },
-      onPageChanged: (focusedDay) {
-        _focusedDay = focusedDay;
-      },
-      calendarStyle: CalendarStyle(
-        todayDecoration: BoxDecoration(
-          color: AppColors.primary.withValues(alpha: 0.2),
-          shape: BoxShape.circle,
-        ),
-        todayTextStyle: const TextStyle(color: AppColors.primary),
-        selectedDecoration: const BoxDecoration(
-          color: AppColors.primary,
-          shape: BoxShape.circle,
-        ),
-        markerDecoration: const BoxDecoration(
-          shape: BoxShape.circle,
-        ),
-        markersMaxCount: 3,
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      calendarBuilders: CalendarBuilders(
-        markerBuilder: (context, date, events) {
-          if (events.isEmpty) return null;
-          return Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: events.take(3).map((event) {
-              return Container(
-                width: 6,
-                height: 6,
-                margin: const EdgeInsets.symmetric(horizontal: 1),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _typeColor(event.type),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: TableCalendar<Appointment>(
+          locale: 'ar_OM',
+          firstDay: DateTime.utc(2024, 1, 1),
+          lastDay: DateTime.utc(2030, 12, 31),
+          focusedDay: _focusedDay,
+          calendarFormat: _calendarFormat,
+          startingDayOfWeek: StartingDayOfWeek.saturday,
+          rowHeight: 52,
+          daysOfWeekHeight: 32,
+          availableCalendarFormats: const {
+            CalendarFormat.month: 'شهر',
+            CalendarFormat.twoWeeks: 'أسبوعين',
+            CalendarFormat.week: 'أسبوع',
+          },
+          selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+          eventLoader: _getEventsForDay,
+          onDaySelected: (selectedDay, focusedDay) {
+            setState(() {
+              _selectedDay = selectedDay;
+              _focusedDay = focusedDay;
+            });
+            widget.onDaySelected(selectedDay);
+          },
+          onFormatChanged: (format) {
+            setState(() => _calendarFormat = format);
+          },
+          onPageChanged: (focusedDay) {
+            _focusedDay = focusedDay;
+          },
+          calendarStyle: CalendarStyle(
+            outsideDaysVisible: false,
+            cellMargin: const EdgeInsets.all(3),
+            todayDecoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            todayTextStyle: const TextStyle(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+            ),
+            selectedDecoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            selectedTextStyle: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+            ),
+            defaultTextStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+            weekendTextStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: AppColors.onSurfaceVariant,
+            ),
+            markersMaxCount: 3,
+            markersAlignment: Alignment.bottomCenter,
+            markerMargin: const EdgeInsets.only(bottom: 4),
+          ),
+          daysOfWeekStyle: DaysOfWeekStyle(
+            weekdayStyle: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.onSurfaceVariant.withValues(alpha: 0.7),
+            ),
+            weekendStyle: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.onSurfaceVariant.withValues(alpha: 0.5),
+            ),
+          ),
+          calendarBuilders: CalendarBuilders(
+            markerBuilder: (context, date, events) {
+              if (events.isEmpty) return null;
+              final isSelected = isSameDay(_selectedDay, date);
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: events.take(3).map((event) {
+                    return Container(
+                      width: 7,
+                      height: 7,
+                      margin: const EdgeInsets.symmetric(horizontal: 1),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isSelected
+                            ? Colors.white
+                            : _typeColor(event.type),
+                        border: isSelected
+                            ? null
+                            : Border.all(
+                                color: _typeColor(event.type)
+                                    .withValues(alpha: 0.3),
+                                width: 1.5,
+                              ),
+                      ),
+                    );
+                  }).toList(),
                 ),
               );
-            }).toList(),
-          );
-        },
-      ),
-      headerStyle: const HeaderStyle(
-        formatButtonVisible: true,
-        titleCentered: true,
-        formatButtonShowsNext: false,
-        formatButtonDecoration: BoxDecoration(
-          border: Border.fromBorderSide(
-            BorderSide(color: AppColors.primary),
+            },
           ),
-          borderRadius: BorderRadius.all(Radius.circular(8)),
-        ),
-        formatButtonTextStyle: TextStyle(
-          color: AppColors.primary,
-          fontSize: 12,
+          headerStyle: HeaderStyle(
+            formatButtonVisible: true,
+            titleCentered: true,
+            formatButtonShowsNext: false,
+            headerPadding: const EdgeInsets.symmetric(vertical: 12),
+            titleTextStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              fontFamily: 'ReadexPro',
+            ),
+            formatButtonDecoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.08),
+              borderRadius: const BorderRadius.all(Radius.circular(8)),
+            ),
+            formatButtonTextStyle: const TextStyle(
+              color: AppColors.primary,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+            leftChevronIcon: const Icon(
+              Icons.chevron_left,
+              color: AppColors.primary,
+              size: 24,
+            ),
+            rightChevronIcon: const Icon(
+              Icons.chevron_right,
+              color: AppColors.primary,
+              size: 24,
+            ),
+          ),
         ),
       ),
     );

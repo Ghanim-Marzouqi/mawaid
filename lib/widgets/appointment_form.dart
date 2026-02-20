@@ -46,6 +46,8 @@ class _AppointmentFormState extends State<AppointmentForm> {
   late final TextEditingController _locationController;
   late final TextEditingController _notesController;
   late AppointmentType _type;
+  late final TextEditingController _startTimeController;
+  late final TextEditingController _endTimeController;
   DateTime? _startTime;
   DateTime? _endTime;
 
@@ -59,6 +61,8 @@ class _AppointmentFormState extends State<AppointmentForm> {
     _type = data?.type ?? AppointmentType.patient;
     _startTime = data?.startTime;
     _endTime = data?.endTime;
+    _startTimeController = TextEditingController(text: _formatPicked(_startTime));
+    _endTimeController = TextEditingController(text: _formatPicked(_endTime));
   }
 
   @override
@@ -66,6 +70,8 @@ class _AppointmentFormState extends State<AppointmentForm> {
     _titleController.dispose();
     _locationController.dispose();
     _notesController.dispose();
+    _startTimeController.dispose();
+    _endTimeController.dispose();
     super.dispose();
   }
 
@@ -87,6 +93,7 @@ class _AppointmentFormState extends State<AppointmentForm> {
     final time = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(initialDate),
+      initialEntryMode: TimePickerEntryMode.dialOnly,
     );
     if (time == null || !mounted) return;
 
@@ -101,11 +108,14 @@ class _AppointmentFormState extends State<AppointmentForm> {
     setState(() {
       if (isStart) {
         _startTime = picked;
+        _startTimeController.text = _formatPicked(_startTime);
         if (_endTime == null || _endTime!.isBefore(picked)) {
           _endTime = picked.add(const Duration(hours: 1));
         }
+        _endTimeController.text = _formatPicked(_endTime);
       } else {
         _endTime = picked;
+        _endTimeController.text = _formatPicked(_endTime);
       }
     });
   }
@@ -185,7 +195,7 @@ class _AppointmentFormState extends State<AppointmentForm> {
           if (!widget.isEditing) const SizedBox(height: 16),
           _DateTimeField(
             label: Strings.startTime,
-            value: _formatPicked(_startTime),
+            controller: _startTimeController,
             icon: LucideIcons.calendarClock,
             onTap: () => _pickDateTime(isStart: true),
             validator: (_) {
@@ -199,7 +209,7 @@ class _AppointmentFormState extends State<AppointmentForm> {
           const SizedBox(height: 16),
           _DateTimeField(
             label: Strings.endTime,
-            value: _formatPicked(_endTime),
+            controller: _endTimeController,
             icon: LucideIcons.calendarClock,
             onTap: () => _pickDateTime(isStart: false),
             validator: (_) {
@@ -266,14 +276,14 @@ class _AppointmentFormState extends State<AppointmentForm> {
 
 class _DateTimeField extends StatelessWidget {
   final String label;
-  final String value;
+  final TextEditingController controller;
   final IconData icon;
   final VoidCallback onTap;
   final String? Function(String?)? validator;
 
   const _DateTimeField({
     required this.label,
-    required this.value,
+    required this.controller,
     required this.icon,
     required this.onTap,
     this.validator,
@@ -283,7 +293,7 @@ class _DateTimeField extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextFormField(
       readOnly: true,
-      initialValue: value,
+      controller: controller,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),
