@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/profile.dart';
 import '../services/supabase_service.dart';
+import '../utils/push_token.dart';
 
 class AuthState {
   final Session? session;
@@ -38,6 +39,7 @@ class AuthNotifier extends Notifier<AuthState> {
     if (session != null) {
       state = state.copyWith(session: session);
       await fetchProfile();
+      registerPushToken(); // fire-and-forget
     }
     state = state.copyWith(isLoading: false);
 
@@ -61,6 +63,7 @@ class AuthNotifier extends Notifier<AuthState> {
     _signingOut = false;
     state = state.copyWith(session: response.session);
     await fetchProfile();
+    registerPushToken(); // fire-and-forget
   }
 
   /// Call supabase.auth.signOut() and clear local state.
