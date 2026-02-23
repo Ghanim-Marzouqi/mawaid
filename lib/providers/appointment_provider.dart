@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/appointment.dart';
 import '../models/appointment_suggestion.dart';
-import '../models/enums.dart';
 import '../services/supabase_service.dart';
 
 class AppointmentState {
@@ -38,8 +37,8 @@ class AppointmentNotifier extends Notifier<AppointmentState> {
     try {
       final data = await supabase
           .from('appointments')
-          .select()
-          .order('start_time');
+          .select('*, appointment_types(*)')
+          .order('start_time', nullsFirst: false);
       final appointments =
           (data as List).map((e) => Appointment.fromJson(e)).toList();
       state = state.copyWith(appointments: appointments, isLoading: false);
@@ -50,24 +49,39 @@ class AppointmentNotifier extends Notifier<AppointmentState> {
 
   Future<Appointment> createAppointment({
     required String title,
-    required AppointmentType type,
-    required DateTime startTime,
-    required DateTime endTime,
+    String? typeId,
+    DateTime? startTime,
+    DateTime? endTime,
     String? location,
     String? notes,
+    bool requiresApproval = true,
+    bool isDraft = false,
   }) async {
+    final insertData = <String, dynamic>{
+      'title': title,
+      'type_id': typeId,
+      'location': location,
+      'notes': notes,
+      'requires_approval': requiresApproval,
+      'created_by': supabase.auth.currentUser!.id,
+    };
+
+    if (isDraft) {
+      insertData['status'] = 'draft';
+      // start_time and end_time are null for drafts
+    } else {
+      if (startTime != null) {
+        insertData['start_time'] = startTime.toUtc().toIso8601String();
+      }
+      if (endTime != null) {
+        insertData['end_time'] = endTime.toUtc().toIso8601String();
+      }
+    }
+
     final data = await supabase
         .from('appointments')
-        .insert({
-          'title': title,
-          'type': type.toDb(),
-          'start_time': startTime.toUtc().toIso8601String(),
-          'end_time': endTime.toUtc().toIso8601String(),
-          'location': location,
-          'notes': notes,
-          'created_by': supabase.auth.currentUser!.id,
-        })
-        .select()
+        .insert(insertData)
+        .select('*, appointment_types(*)')
         .single();
     final appointment = Appointment.fromJson(data);
     state = state.copyWith(
@@ -122,6 +136,36 @@ class AppointmentNotifier extends Notifier<AppointmentState> {
     await fetchAppointments();
   }
 
+  Future<void> setDraftTime({
+    required String appointmentId,
+    required DateTime startTime,
+    required DateTime endTime,
+    required bool requiresApproval,
+  }) async {
+    if (requiresApproval) {
+      // Create a suggestion for coordinator to review, don't set time yet
+      await supabase.from('appointment_suggestions').insert({
+        'appointment_id': appointmentId,
+        'suggested_by': supabase.auth.currentUser!.id,
+        'suggested_start': startTime.toUtc().toIso8601String(),
+        'suggested_end': endTime.toUtc().toIso8601String(),
+      });
+      await supabase.from('appointments').update({
+        'status': 'suggested',
+      }).eq('id', appointmentId);
+    } else {
+      // Set time directly and confirm
+      await supabase.from('appointments').update({
+        'start_time': startTime.toUtc().toIso8601String(),
+        'end_time': endTime.toUtc().toIso8601String(),
+        'status': 'confirmed',
+        'reviewed_by': supabase.auth.currentUser!.id,
+        'reviewed_at': DateTime.now().toUtc().toIso8601String(),
+      }).eq('id', appointmentId);
+    }
+    await fetchAppointments();
+  }
+
   Future<void> acceptSuggestion({
     required String appointmentId,
     required AppointmentSuggestion suggestion,
@@ -142,9 +186,17 @@ class AppointmentNotifier extends Notifier<AppointmentState> {
     required String appointmentId,
     required String suggestionId,
   }) async {
+    // Check if this was a draft (no time set on appointment)
+    final appointment = state.appointments
+        .where((a) => a.id == appointmentId)
+        .firstOrNull;
+    final revertStatus =
+        (appointment != null && appointment.startTime == null)
+            ? 'draft'
+            : 'pending';
     await supabase
         .from('appointments')
-        .update({'status': 'pending'})
+        .update({'status': revertStatus})
         .eq('id', appointmentId);
     await supabase
         .from('appointment_suggestions')

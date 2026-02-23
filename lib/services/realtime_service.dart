@@ -11,8 +11,9 @@ class RealtimeService {
     required void Function(PostgresChangePayload payload) onAppointmentChange,
     required void Function(PostgresChangePayload payload) onNotificationInsert,
     required void Function(PostgresChangePayload payload) onSuggestionChange,
+    void Function(PostgresChangePayload payload)? onAppointmentTypeChange,
   }) {
-    _channel = _supabase
+    var channel = _supabase
         .channel('app-realtime')
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
@@ -37,7 +38,14 @@ class RealtimeService {
           table: 'appointment_suggestions',
           callback: onSuggestionChange,
         )
-        .subscribe();
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'appointment_types',
+          callback: onAppointmentTypeChange ?? (_) {},
+        );
+
+    _channel = channel.subscribe();
   }
 
   void dispose() {

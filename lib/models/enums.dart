@@ -1,8 +1,6 @@
 enum UserRole { coordinator, manager }
 
-enum AppointmentType { ministry, patient, external_ }
-
-enum AppointmentStatus { pending, confirmed, rejected, suggested, cancelled }
+enum AppointmentStatus { pending, confirmed, rejected, suggested, cancelled, draft }
 
 enum NotificationType {
   newAppointment,
@@ -13,21 +11,6 @@ enum NotificationType {
   suggestionRejected,
   appointmentCancelled,
   ministryAutoConfirmed,
-}
-
-extension AppointmentTypeX on AppointmentType {
-  String toDb() => switch (this) {
-        AppointmentType.ministry => 'ministry',
-        AppointmentType.patient => 'patient',
-        AppointmentType.external_ => 'external',
-      };
-
-  static AppointmentType fromDb(String v) => switch (v) {
-        'ministry' => AppointmentType.ministry,
-        'patient' => AppointmentType.patient,
-        'external' => AppointmentType.external_,
-        _ => throw ArgumentError('Unknown AppointmentType: $v'),
-      };
 }
 
 extension AppointmentStatusX on AppointmentStatus {

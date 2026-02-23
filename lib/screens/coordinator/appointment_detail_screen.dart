@@ -220,24 +220,6 @@ class _AppointmentDetailScreenState
     }
   }
 
-  Color _typeColor(AppointmentType type) => switch (type) {
-        AppointmentType.ministry => AppColors.ministry,
-        AppointmentType.patient => AppColors.patient,
-        AppointmentType.external_ => AppColors.external_,
-      };
-
-  IconData _typeIcon(AppointmentType type) => switch (type) {
-        AppointmentType.ministry => LucideIcons.landmark,
-        AppointmentType.patient => LucideIcons.userRound,
-        AppointmentType.external_ => LucideIcons.building2,
-      };
-
-  String _typeLabel(AppointmentType type) => switch (type) {
-        AppointmentType.ministry => Strings.ministry,
-        AppointmentType.patient => Strings.patient,
-        AppointmentType.external_ => Strings.external_,
-      };
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(appointmentProvider);
@@ -252,17 +234,10 @@ class _AppointmentDetailScreenState
       );
     }
 
-    final typeColor = _typeColor(appointment.type);
-    final isMinistry = appointment.type == AppointmentType.ministry;
-    final canCancel = !isMinistry &&
-        (appointment.status == AppointmentStatus.pending ||
-            appointment.status == AppointmentStatus.confirmed);
-    final canDelete = !isMinistry &&
-        appointment.status == AppointmentStatus.pending;
-
-    final canEdit = !isMinistry &&
-        (appointment.status == AppointmentStatus.pending ||
-            appointment.status == AppointmentStatus.confirmed);
+    final td = appointment.typeData;
+    final typeColor = td != null ? AppColors.typeColor(td.colorIndex) : AppColors.draft;
+    final typeIcon = td != null ? LucideIcons.tag : LucideIcons.circleQuestionMark;
+    final typeLabel = td?.name ?? Strings.appointmentType;
 
     return Scaffold(
       appBar: AppBar(
@@ -272,12 +247,11 @@ class _AppointmentDetailScreenState
           onPressed: () => context.pop(),
         ),
         actions: [
-          if (canEdit)
-            IconButton(
-              icon: const Icon(LucideIcons.pencil, size: 20),
-              tooltip: Strings.edit,
-              onPressed: () => context.push('/coordinator/edit/${widget.id}'),
-            ),
+          IconButton(
+            icon: const Icon(LucideIcons.pencil, size: 20),
+            tooltip: Strings.edit,
+            onPressed: () => context.push('/coordinator/edit/${widget.id}'),
+          ),
         ],
       ),
       body: Center(
@@ -313,19 +287,21 @@ class _AppointmentDetailScreenState
                             color: typeColor.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: Icon(_typeIcon(appointment.type),
-                              size: 20, color: typeColor),
+                          child: Icon(typeIcon, size: 20, color: typeColor),
                         ),
                         const SizedBox(width: 10),
-                        Text(
-                          _typeLabel(appointment.type),
-                          style: TextStyle(
-                            color: typeColor,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                        Flexible(
+                          child: Text(
+                            typeLabel,
+                            style: TextStyle(
+                              color: typeColor,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const Spacer(),
+                        const SizedBox(width: 8),
                         StatusBadge(status: appointment.status),
                       ],
                     ),
@@ -341,6 +317,30 @@ class _AppointmentDetailScreenState
               ),
               const SizedBox(height: 16),
 
+              // --- Requires approval indicator ---
+              if (!appointment.requiresApproval)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.confirmed.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.confirmed.withValues(alpha: 0.15)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(LucideIcons.shieldOff, size: 16, color: AppColors.confirmed),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'لا يتطلب موافقة المدير',
+                          style: TextStyle(fontSize: 13, color: AppColors.confirmed),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
               // --- Date & time card ---
               Container(
                 padding: const EdgeInsets.all(16),
@@ -353,21 +353,28 @@ class _AppointmentDetailScreenState
                 ),
                 child: Column(
                   children: [
-                    _InfoRow(
-                      icon: LucideIcons.calendarDays,
-                      label: 'التاريخ',
-                      value: formatDate(appointment.startTime),
-                    ),
-                    Divider(
-                      height: 24,
-                      color: Colors.grey.withValues(alpha: 0.15),
-                    ),
-                    _InfoRow(
-                      icon: LucideIcons.clock,
-                      label: 'الوقت',
-                      value: formatTimeRange(
-                          appointment.startTime, appointment.endTime),
-                    ),
+                    if (appointment.startTime != null) ...[
+                      _InfoRow(
+                        icon: LucideIcons.calendarDays,
+                        label: 'التاريخ',
+                        value: formatDate(appointment.startTime!),
+                      ),
+                      Divider(
+                        height: 24,
+                        color: Colors.grey.withValues(alpha: 0.15),
+                      ),
+                      _InfoRow(
+                        icon: LucideIcons.clock,
+                        label: 'الوقت',
+                        value: formatTimeRange(
+                            appointment.startTime!, appointment.endTime!),
+                      ),
+                    ] else
+                      _InfoRow(
+                        icon: LucideIcons.clock,
+                        label: 'الوقت',
+                        value: Strings.timeNotSet,
+                      ),
                     if (appointment.location != null &&
                         appointment.location!.isNotEmpty) ...[
                       Divider(
@@ -470,53 +477,49 @@ class _AppointmentDetailScreenState
                   child: Center(child: CircularProgressIndicator()),
                 ),
 
-              // --- Actions ---
-              if (canCancel || canDelete) ...[
-                const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.error.withValues(alpha: 0.03),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: AppColors.error.withValues(alpha: 0.1),
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      if (canCancel)
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton.icon(
-                            onPressed:
-                                _actionLoading ? null : _cancelAppointment,
-                            icon: const Icon(LucideIcons.x, size: 16),
-                            label: const Text(Strings.cancel),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.error,
-                              side: const BorderSide(color: AppColors.error),
-                            ),
-                          ),
-                        ),
-                      if (canCancel && canDelete) const SizedBox(height: 8),
-                      if (canDelete)
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton.icon(
-                            onPressed:
-                                _actionLoading ? null : _deleteAppointment,
-                            icon: const Icon(LucideIcons.trash2, size: 16),
-                            label: const Text(Strings.delete),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.error,
-                              side: const BorderSide(color: AppColors.error),
-                            ),
-                          ),
-                        ),
-                    ],
+              // --- Actions (always available) ---
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.03),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: AppColors.error.withValues(alpha: 0.1),
                   ),
                 ),
-              ],
+                child: Column(
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed:
+                            _actionLoading ? null : _cancelAppointment,
+                        icon: const Icon(LucideIcons.x, size: 16),
+                        label: const Text(Strings.cancel),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.error,
+                          side: const BorderSide(color: AppColors.error),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed:
+                            _actionLoading ? null : _deleteAppointment,
+                        icon: const Icon(LucideIcons.trash2, size: 16),
+                        label: const Text(Strings.delete),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.error,
+                          side: const BorderSide(color: AppColors.error),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: 24),
 
               // --- Metadata ---

@@ -38,7 +38,9 @@ class _CalendarViewState extends State<CalendarView> {
 
   List<Appointment> _getEventsForDay(DateTime day) {
     return widget.appointments.where((a) {
-      final start = toMuscat(a.startTime);
+      // Filter out drafts (no start time)
+      if (a.startTime == null) return false;
+      final start = toMuscat(a.startTime!);
       if (start.year != day.year ||
           start.month != day.month ||
           start.day != day.day) {
@@ -156,20 +158,18 @@ class _CalendarViewState extends State<CalendarView> {
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: events.take(3).map((event) {
+                    final color = _typeColor(event);
                     return Container(
                       width: 7,
                       height: 7,
                       margin: const EdgeInsets.symmetric(horizontal: 1),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: isSelected
-                            ? Colors.white
-                            : _typeColor(event.type),
+                        color: isSelected ? Colors.white : color,
                         border: isSelected
                             ? null
                             : Border.all(
-                                color: _typeColor(event.type)
-                                    .withValues(alpha: 0.3),
+                                color: color.withValues(alpha: 0.3),
                                 width: 1.5,
                               ),
                       ),
@@ -214,9 +214,9 @@ class _CalendarViewState extends State<CalendarView> {
     );
   }
 
-  Color _typeColor(AppointmentType type) => switch (type) {
-        AppointmentType.ministry => AppColors.ministry,
-        AppointmentType.patient => AppColors.patient,
-        AppointmentType.external_ => AppColors.external_,
-      };
+  Color _typeColor(Appointment appointment) {
+    final td = appointment.typeData;
+    if (td != null) return AppColors.typeColor(td.colorIndex);
+    return AppColors.draft;
+  }
 }

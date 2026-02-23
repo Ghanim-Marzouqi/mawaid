@@ -6,6 +6,7 @@ import '../../constants/strings.dart';
 import '../../models/appointment.dart';
 import '../../models/enums.dart';
 import '../../providers/appointment_provider.dart';
+import '../../providers/appointment_type_provider.dart';
 import '../../theme/colors.dart';
 import '../../utils/format_date.dart';
 import '../../widgets/calendar_view.dart';
@@ -33,17 +34,19 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(appointmentProvider);
+    final typeState = ref.watch(appointmentTypeProvider);
     final selectedDayAppointments = _selectedDay == null
         ? <Appointment>[]
         : state.appointments.where((a) {
-            final start = toMuscat(a.startTime);
+            if (a.startTime == null) return false; // skip drafts
+            final start = toMuscat(a.startTime!);
             return start.year == _selectedDay!.year &&
                 start.month == _selectedDay!.month &&
                 start.day == _selectedDay!.day &&
                 a.status != AppointmentStatus.cancelled &&
                 a.status != AppointmentStatus.rejected;
           }).toList()
-      ..sort((a, b) => a.startTime.compareTo(b.startTime));
+      ..sort((a, b) => a.startTime!.compareTo(b.startTime!));
 
     return Scaffold(
       appBar: AppBar(title: const Text(Strings.calendar)),
@@ -68,7 +71,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     ],
                   ),
                 )
-              : Column(
+              : ListView(
                   children: [
                     CalendarView(
                       appointments: state.appointments,
@@ -77,27 +80,23 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                         setState(() => _selectedDay = day);
                       },
                     ),
-                    // Legend
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _LegendDot(
-                              color: AppColors.ministry,
-                              label: Strings.ministry),
-                          const SizedBox(width: 16),
-                          _LegendDot(
-                              color: AppColors.patient,
-                              label: Strings.patient),
-                          const SizedBox(width: 16),
-                          _LegendDot(
-                              color: AppColors.external_,
-                              label: Strings.external_),
-                        ],
+                    // Dynamic legend
+                    if (typeState.types.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 8),
+                        child: Wrap(
+                          alignment: WrapAlignment.center,
+                          spacing: 16,
+                          runSpacing: 4,
+                          children: typeState.types
+                              .map((t) => _LegendDot(
+                                    color: AppColors.typeColor(t.colorIndex),
+                                    label: t.name,
+                                  ))
+                              .toList(),
+                        ),
                       ),
-                    ),
                     // Selected day header
                     if (_selectedDay != null)
                       Padding(
@@ -123,7 +122,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
-                                '${selectedDayAppointments.length} \u0645\u0648\u0627\u0639\u064a\u062f',
+                                '${selectedDayAppointments.length} مواعيد',
                                 style: const TextStyle(
                                   color: AppColors.primary,
                                   fontSize: 12,
@@ -136,57 +135,50 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       ),
                     const SizedBox(height: 4),
                     // Appointment list
-                    Expanded(
-                      child: selectedDayAppointments.isEmpty
-                          ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Container(
-                                    width: 56,
-                                    height: 56,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary
-                                          .withValues(alpha: 0.06),
-                                      borderRadius:
-                                          BorderRadius.circular(14),
-                                    ),
-                                    child: const Icon(
-                                      LucideIcons.calendarOff,
-                                      size: 28,
-                                      color: AppColors.onSurfaceVariant,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  const Text(
-                                    Strings.noAppointments,
-                                    style: TextStyle(
-                                      color: AppColors.onSurfaceVariant,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
+                    if (selectedDayAppointments.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 48),
+                        child: Column(
+                          children: [
+                            Container(
+                              width: 56,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                color: AppColors.primary
+                                    .withValues(alpha: 0.06),
+                                borderRadius:
+                                    BorderRadius.circular(14),
                               ),
-                            )
-                          : ListView.builder(
-                              padding: const EdgeInsets.fromLTRB(
-                                  16, 4, 16, 16),
-                              itemCount: selectedDayAppointments.length,
-                              itemBuilder: (context, index) {
-                                final a = selectedDayAppointments[index];
-                                return Padding(
-                                  padding:
-                                      const EdgeInsets.only(bottom: 8),
-                                  child: _CalendarAppointmentCard(
-                                    appointment: a,
-                                    onTap: () => context.push(
-                                        '/manager/appointment/${a.id}'),
-                                  ),
-                                );
-                              },
+                              child: const Icon(
+                                LucideIcons.calendarOff,
+                                size: 28,
+                                color: AppColors.onSurfaceVariant,
+                              ),
                             ),
-                    ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              Strings.noAppointments,
+                              style: TextStyle(
+                                color: AppColors.onSurfaceVariant,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      ...selectedDayAppointments.map(
+                        (a) => Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                          child: _CalendarAppointmentCard(
+                            appointment: a,
+                            onTap: () => context.push(
+                                '/manager/appointment/${a.id}'),
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 16),
                   ],
                 ),
     );
@@ -234,23 +226,20 @@ class _CalendarAppointmentCard extends StatelessWidget {
     this.onTap,
   });
 
-  Color get _typeColor => switch (appointment.type) {
-        AppointmentType.ministry => AppColors.ministry,
-        AppointmentType.patient => AppColors.patient,
-        AppointmentType.external_ => AppColors.external_,
-      };
+  Color get _typeColor {
+    final td = appointment.typeData;
+    if (td != null) return AppColors.typeColor(td.colorIndex);
+    return AppColors.draft;
+  }
 
-  IconData get _typeIcon => switch (appointment.type) {
-        AppointmentType.ministry => LucideIcons.landmark,
-        AppointmentType.patient => LucideIcons.userRound,
-        AppointmentType.external_ => LucideIcons.building2,
-      };
+  IconData get _typeIcon {
+    if (appointment.typeData != null) return LucideIcons.tag;
+    return LucideIcons.circleQuestionMark;
+  }
 
-  String get _typeLabel => switch (appointment.type) {
-        AppointmentType.ministry => Strings.ministry,
-        AppointmentType.patient => Strings.patient,
-        AppointmentType.external_ => Strings.external_,
-      };
+  String get _typeLabel {
+    return appointment.typeData?.name ?? Strings.appointmentType;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -280,8 +269,6 @@ class _CalendarAppointmentCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: _typeColor,
                   borderRadius: const BorderRadiusDirectional.only(
-                    topEnd: Radius.circular(0),
-                    bottomEnd: Radius.circular(0),
                     topStart: Radius.circular(12),
                     bottomStart: Radius.circular(12),
                   ),
@@ -295,7 +282,9 @@ class _CalendarAppointmentCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      formatTime(appointment.startTime),
+                      appointment.startTime != null
+                          ? formatTime(appointment.startTime!)
+                          : '--:--',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -313,7 +302,9 @@ class _CalendarAppointmentCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      formatTime(appointment.endTime),
+                      appointment.endTime != null
+                          ? formatTime(appointment.endTime!)
+                          : '--:--',
                       style: TextStyle(
                         fontSize: 11,
                         color: AppColors.onSurfaceVariant
@@ -350,15 +341,18 @@ class _CalendarAppointmentCard extends StatelessWidget {
                                 size: 13, color: _typeColor),
                           ),
                           const SizedBox(width: 6),
-                          Text(
-                            _typeLabel,
-                            style: TextStyle(
-                              color: _typeColor,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
+                          Flexible(
+                            child: Text(
+                              _typeLabel,
+                              style: TextStyle(
+                                color: _typeColor,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          const Spacer(),
+                          const SizedBox(width: 4),
                           StatusBadge(status: appointment.status),
                         ],
                       ),

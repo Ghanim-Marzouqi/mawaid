@@ -19,41 +19,49 @@ class _CreateAppointmentScreenState
   bool _isLoading = false;
 
   Future<void> _handleSubmit(AppointmentFormData data) async {
-    if (data.startTime == null || data.endTime == null) return;
+    // Draft submit skips time validation and conflict check
+    if (!data.isDraft) {
+      if (data.startTime == null || data.endTime == null) return;
+    }
 
     setState(() => _isLoading = true);
 
     try {
-      // Check conflicts
-      final conflicts = await ref
-          .read(appointmentProvider.notifier)
-          .checkConflicts(
-            startTime: data.startTime!,
-            endTime: data.endTime!,
-          );
+      // Check conflicts only for non-draft appointments with times
+      if (!data.isDraft && data.startTime != null && data.endTime != null) {
+        final conflicts = await ref
+            .read(appointmentProvider.notifier)
+            .checkConflicts(
+              startTime: data.startTime!,
+              endTime: data.endTime!,
+            );
 
-      if (conflicts.isNotEmpty && mounted) {
-        final proceed = await showConflictDialog(context, conflicts);
-        if (proceed != true) {
-          setState(() => _isLoading = false);
-          return;
+        if (conflicts.isNotEmpty && mounted) {
+          final proceed = await showConflictDialog(context, conflicts);
+          if (proceed != true) {
+            setState(() => _isLoading = false);
+            return;
+          }
         }
       }
 
       await ref.read(appointmentProvider.notifier).createAppointment(
             title: data.title,
-            type: data.type,
-            startTime: data.startTime!,
-            endTime: data.endTime!,
+            typeId: data.typeId,
+            startTime: data.startTime,
+            endTime: data.endTime,
             location: data.location,
             notes: data.notes,
+            requiresApproval: data.requiresApproval,
+            isDraft: data.isDraft,
           );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(Strings.appointmentCreated),
-            backgroundColor: Color(0xFF2E7D32),
+          SnackBar(
+            content: Text(
+                data.isDraft ? Strings.draftCreated : Strings.appointmentCreated),
+            backgroundColor: const Color(0xFF2E7D32),
           ),
         );
         context.go('/coordinator');

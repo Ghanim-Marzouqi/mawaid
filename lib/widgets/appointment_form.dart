@@ -1,28 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import '../models/enums.dart';
 import '../constants/strings.dart';
-
+import '../providers/appointment_type_provider.dart';
+import '../theme/colors.dart';
 
 class AppointmentFormData {
   String title;
-  AppointmentType type;
+  String? typeId;
   DateTime? startTime;
   DateTime? endTime;
   String? location;
   String? notes;
+  bool requiresApproval;
+  bool isDraft;
 
   AppointmentFormData({
     this.title = '',
-    this.type = AppointmentType.patient,
+    this.typeId,
     this.startTime,
     this.endTime,
     this.location,
     this.notes,
+    this.requiresApproval = true,
+    this.isDraft = false,
   });
 }
 
-class AppointmentForm extends StatefulWidget {
+class AppointmentForm extends ConsumerStatefulWidget {
   final AppointmentFormData? initialData;
   final bool isEditing;
   final bool isLoading;
@@ -37,19 +42,22 @@ class AppointmentForm extends StatefulWidget {
   });
 
   @override
-  State<AppointmentForm> createState() => _AppointmentFormState();
+  ConsumerState<AppointmentForm> createState() => _AppointmentFormState();
 }
 
-class _AppointmentFormState extends State<AppointmentForm> {
+class _AppointmentFormState extends ConsumerState<AppointmentForm> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _titleController;
   late final TextEditingController _locationController;
   late final TextEditingController _notesController;
-  late AppointmentType _type;
+  String? _typeId;
   late final TextEditingController _startTimeController;
   late final TextEditingController _endTimeController;
   DateTime? _startTime;
   DateTime? _endTime;
+  late bool _requiresApproval;
+  bool _isDraft = false;
+  bool _draftRequiresConfirmation = true;
 
   @override
   void initState() {
@@ -58,9 +66,11 @@ class _AppointmentFormState extends State<AppointmentForm> {
     _titleController = TextEditingController(text: data?.title ?? '');
     _locationController = TextEditingController(text: data?.location ?? '');
     _notesController = TextEditingController(text: data?.notes ?? '');
-    _type = data?.type ?? AppointmentType.patient;
+    _typeId = data?.typeId;
     _startTime = data?.startTime;
     _endTime = data?.endTime;
+    _requiresApproval = data?.requiresApproval ?? true;
+    _isDraft = data?.isDraft ?? false;
     _startTimeController = TextEditingController(text: _formatPicked(_startTime));
     _endTimeController = TextEditingController(text: _formatPicked(_endTime));
   }
@@ -129,24 +139,30 @@ class _AppointmentFormState extends State<AppointmentForm> {
 
   void _handleSubmit() {
     if (!_formKey.currentState!.validate()) return;
-    if (_startTime == null || _endTime == null) return;
+
+    if (!_isDraft && (_startTime == null || _endTime == null)) return;
 
     widget.onSubmit(AppointmentFormData(
       title: _titleController.text.trim(),
-      type: _type,
-      startTime: _startTime,
-      endTime: _endTime,
+      typeId: _typeId,
+      startTime: _isDraft ? null : _startTime,
+      endTime: _isDraft ? null : _endTime,
       location: _locationController.text.trim().isEmpty
           ? null
           : _locationController.text.trim(),
       notes: _notesController.text.trim().isEmpty
           ? null
           : _notesController.text.trim(),
+      requiresApproval: _isDraft ? _draftRequiresConfirmation : _requiresApproval,
+      isDraft: _isDraft,
     ));
   }
 
   @override
   Widget build(BuildContext context) {
+    final typeState = ref.watch(appointmentTypeProvider);
+    final types = typeState.types;
+
     return Form(
       key: _formKey,
       child: ListView(
@@ -167,64 +183,161 @@ class _AppointmentFormState extends State<AppointmentForm> {
             },
           ),
           const SizedBox(height: 16),
-          if (!widget.isEditing)
-            DropdownButtonFormField<AppointmentType>(
-              initialValue: _type,
-              decoration: const InputDecoration(
-                labelText: Strings.appointmentType,
-                prefixIcon: Icon(LucideIcons.tag),
-              ),
-              items: const [
-                DropdownMenuItem(
-                  value: AppointmentType.ministry,
-                  child: Text(Strings.ministry),
-                ),
-                DropdownMenuItem(
-                  value: AppointmentType.patient,
-                  child: Text(Strings.patient),
-                ),
-                DropdownMenuItem(
-                  value: AppointmentType.external_,
-                  child: Text(Strings.external_),
-                ),
-              ],
-              onChanged: (value) {
-                if (value != null) setState(() => _type = value);
-              },
+          // Dynamic type dropdown
+          DropdownButtonFormField<String>(
+            initialValue: _typeId,
+            decoration: const InputDecoration(
+              labelText: Strings.appointmentType,
+              prefixIcon: Icon(LucideIcons.tag),
             ),
-          if (!widget.isEditing) const SizedBox(height: 16),
-          _DateTimeField(
-            label: Strings.startTime,
-            controller: _startTimeController,
-            icon: LucideIcons.calendarClock,
-            onTap: () => _pickDateTime(isStart: true),
-            validator: (_) {
-              if (_startTime == null) return Strings.requiredField;
-              if (_endTime != null && !_startTime!.isBefore(_endTime!)) {
-                return Strings.startMustBeBeforeEnd;
-              }
+            items: types
+                .map((t) => DropdownMenuItem(
+                      value: t.id,
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: AppColors.typeColor(t.colorIndex),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(t.name),
+                        ],
+                      ),
+                    ))
+                .toList(),
+            onChanged: (value) {
+              setState(() => _typeId = value);
+            },
+            validator: (value) {
+              if (value == null) return Strings.requiredField;
               return null;
             },
           ),
           const SizedBox(height: 16),
-          _DateTimeField(
-            label: Strings.endTime,
-            controller: _endTimeController,
-            icon: LucideIcons.calendarClock,
-            onTap: () => _pickDateTime(isStart: false),
-            validator: (_) {
-              if (_endTime == null) return Strings.requiredField;
-              if (_startTime != null) {
-                if (!_endTime!.isAfter(_startTime!)) {
+          // Requires approval toggle (always visible, disabled when draft)
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: SwitchListTile(
+              title: Text(
+                Strings.requiresApproval,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: _isDraft ? AppColors.onSurfaceVariant.withValues(alpha: 0.5) : null,
+                ),
+              ),
+              value: _isDraft ? true : _requiresApproval,
+              onChanged: _isDraft
+                  ? null
+                  : (value) {
+                      setState(() => _requiresApproval = value);
+                    },
+              secondary: Icon(
+                (_isDraft || _requiresApproval) ? LucideIcons.shieldCheck : LucideIcons.shieldOff,
+                color: _isDraft
+                    ? AppColors.onSurfaceVariant.withValues(alpha: 0.4)
+                    : (_requiresApproval ? AppColors.primary : AppColors.cancelled),
+                size: 20,
+              ),
+              dense: true,
+            ),
+          ),
+          // Draft toggle (create mode only)
+          if (!widget.isEditing) ...[
+            const SizedBox(height: 16),
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: SwitchListTile(
+                title: const Text(
+                  Strings.managerSetsTime,
+                  style: TextStyle(fontSize: 14),
+                ),
+                value: _isDraft,
+                onChanged: (value) {
+                  setState(() => _isDraft = value);
+                },
+                secondary: Icon(
+                  _isDraft ? LucideIcons.calendarClock : LucideIcons.calendar,
+                  color: _isDraft ? AppColors.draft : AppColors.onSurfaceVariant,
+                  size: 20,
+                ),
+                dense: true,
+              ),
+            ),
+          ],
+          // Review time toggle (only when draft is on, same level)
+          if (_isDraft) ...[
+            const SizedBox(height: 16),
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: SwitchListTile(
+                title: const Text(
+                  Strings.draftRequiresConfirmation,
+                  style: TextStyle(fontSize: 14),
+                ),
+                value: _draftRequiresConfirmation,
+                onChanged: (value) {
+                  setState(() => _draftRequiresConfirmation = value);
+                },
+                secondary: Icon(
+                  _draftRequiresConfirmation ? LucideIcons.shieldCheck : LucideIcons.shieldOff,
+                  color: _draftRequiresConfirmation ? AppColors.draft : AppColors.cancelled,
+                  size: 20,
+                ),
+                dense: true,
+              ),
+            ),
+          ],
+          if (!_isDraft) ...[
+            const SizedBox(height: 16),
+            _DateTimeField(
+              label: Strings.startTime,
+              controller: _startTimeController,
+              icon: LucideIcons.calendarClock,
+              onTap: () => _pickDateTime(isStart: true),
+              validator: (_) {
+                if (_startTime == null) return Strings.requiredField;
+                if (_endTime != null && !_startTime!.isBefore(_endTime!)) {
                   return Strings.startMustBeBeforeEnd;
                 }
-                if (_endTime!.difference(_startTime!).inMinutes < 15) {
-                  return Strings.minDuration;
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            _DateTimeField(
+              label: Strings.endTime,
+              controller: _endTimeController,
+              icon: LucideIcons.calendarClock,
+              onTap: () => _pickDateTime(isStart: false),
+              validator: (_) {
+                if (_endTime == null) return Strings.requiredField;
+                if (_startTime != null) {
+                  if (!_endTime!.isAfter(_startTime!)) {
+                    return Strings.startMustBeBeforeEnd;
+                  }
+                  if (_endTime!.difference(_startTime!).inMinutes < 5) {
+                    return Strings.minDuration;
+                  }
                 }
-              }
-              return null;
-            },
-          ),
+                return null;
+              },
+            ),
+          ],
           const SizedBox(height: 16),
           TextFormField(
             controller: _locationController,

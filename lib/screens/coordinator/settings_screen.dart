@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../constants/strings.dart';
+import '../../providers/appointment_type_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/colors.dart';
 
@@ -13,6 +14,8 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
     final profile = authState.profile;
+    final typeState = ref.watch(appointmentTypeProvider);
+    final types = typeState.types;
 
     return Scaffold(
       appBar: AppBar(title: const Text(Strings.settings)),
@@ -108,6 +111,96 @@ class SettingsScreen extends ConsumerWidget {
                   ],
                 ),
               ),
+              const SizedBox(height: 16),
+
+              // Appointment Types management
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: Colors.grey.withValues(alpha: 0.15),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(LucideIcons.tag, size: 18, color: AppColors.primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          Strings.appointmentTypes,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(LucideIcons.plus, size: 20),
+                          color: AppColors.primary,
+                          onPressed: () => _showAddTypeDialog(context, ref),
+                          tooltip: Strings.addType,
+                        ),
+                      ],
+                    ),
+                    if (types.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: Center(
+                          child: Text(
+                            Strings.noTypes,
+                            style: TextStyle(
+                              color: AppColors.onSurfaceVariant.withValues(alpha: 0.6),
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      ...types.map((type) => Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 14,
+                                  height: 14,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.typeColor(type.colorIndex),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    type.name,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(LucideIcons.pencil, size: 16),
+                                  color: AppColors.onSurfaceVariant,
+                                  onPressed: () => _showEditTypeDialog(context, ref, type.id, type.name),
+                                  tooltip: Strings.editType,
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                                IconButton(
+                                  icon: const Icon(LucideIcons.trash2, size: 16),
+                                  color: AppColors.error,
+                                  onPressed: () => _showDeleteTypeDialog(context, ref, type.id),
+                                  tooltip: Strings.deleteType,
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                              ],
+                            ),
+                          )),
+                  ],
+                ),
+              ),
               const SizedBox(height: 24),
 
               // Sign out
@@ -136,6 +229,150 @@ class SettingsScreen extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showAddTypeDialog(BuildContext context, WidgetRef ref) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text(Strings.addType),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: Strings.typeName,
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text(Strings.cancel),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final name = controller.text.trim();
+              if (name.isEmpty) return;
+              Navigator.pop(dialogContext);
+              try {
+                await ref.read(appointmentTypeProvider.notifier).createType(name);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(Strings.typeCreated),
+                      backgroundColor: AppColors.confirmed,
+                    ),
+                  );
+                }
+              } catch (_) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(Strings.genericError),
+                      backgroundColor: AppColors.error,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text(Strings.create),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditTypeDialog(BuildContext context, WidgetRef ref, String id, String currentName) {
+    final controller = TextEditingController(text: currentName);
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text(Strings.editType),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: Strings.typeName,
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text(Strings.cancel),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final name = controller.text.trim();
+              if (name.isEmpty) return;
+              Navigator.pop(dialogContext);
+              try {
+                await ref.read(appointmentTypeProvider.notifier).updateType(id, name);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(Strings.typeUpdated),
+                      backgroundColor: AppColors.confirmed,
+                    ),
+                  );
+                }
+              } catch (_) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(Strings.genericError),
+                      backgroundColor: AppColors.error,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text(Strings.save),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteTypeDialog(BuildContext context, WidgetRef ref, String id) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text(Strings.confirmDeleteType),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text(Strings.cancel),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              try {
+                await ref.read(appointmentTypeProvider.notifier).deleteType(id);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(Strings.typeDeleted),
+                      backgroundColor: AppColors.confirmed,
+                    ),
+                  );
+                }
+              } catch (_) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(Strings.genericError),
+                      backgroundColor: AppColors.error,
+                    ),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            child: const Text(Strings.delete),
+          ),
+        ],
       ),
     );
   }

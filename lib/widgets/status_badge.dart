@@ -33,6 +33,7 @@ class StatusBadge extends StatelessWidget {
         AppointmentStatus.rejected => AppColors.rejected,
         AppointmentStatus.suggested => AppColors.suggested,
         AppointmentStatus.cancelled => AppColors.cancelled,
+        AppointmentStatus.draft => AppColors.draft,
       };
 
   String get _label => switch (status) {
@@ -41,5 +42,6 @@ class StatusBadge extends StatelessWidget {
         AppointmentStatus.rejected => Strings.rejected,
         AppointmentStatus.suggested => Strings.suggested,
         AppointmentStatus.cancelled => Strings.cancelled,
+        AppointmentStatus.draft => Strings.draftStatus,
       };
 }

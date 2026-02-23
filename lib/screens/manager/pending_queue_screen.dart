@@ -33,21 +33,34 @@ class _PendingQueueScreenState extends ConsumerState<PendingQueueScreen> {
     final pendingAppointments = state.appointments
         .where((a) => a.status == AppointmentStatus.pending)
         .toList()
-      ..sort((a, b) => a.startTime.compareTo(b.startTime));
+      ..sort((a, b) {
+        if (a.startTime == null && b.startTime == null) return 0;
+        if (a.startTime == null) return 1;
+        if (b.startTime == null) return -1;
+        return a.startTime!.compareTo(b.startTime!);
+      });
+
+    final draftAppointments = state.appointments
+        .where((a) => a.status == AppointmentStatus.draft)
+        .toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     final todayAppointments = state.appointments.where((a) {
-      final start = toMuscat(a.startTime);
+      if (a.startTime == null) return false;
+      final start = toMuscat(a.startTime!);
       return start.year == now.year &&
           start.month == now.month &&
           start.day == now.day &&
           a.status != AppointmentStatus.cancelled &&
-          a.status != AppointmentStatus.rejected;
+          a.status != AppointmentStatus.rejected &&
+          a.status != AppointmentStatus.draft;
     }).toList()
-      ..sort((a, b) => a.startTime.compareTo(b.startTime));
+      ..sort((a, b) => a.startTime!.compareTo(b.startTime!));
 
-    final suggestedCount = state.appointments
+    final suggestedAppointments = state.appointments
         .where((a) => a.status == AppointmentStatus.suggested)
-        .length;
+        .toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     return Scaffold(
       appBar: AppBar(title: const Text(Strings.pendingQueue)),
@@ -74,26 +87,46 @@ class _PendingQueueScreenState extends ConsumerState<PendingQueueScreen> {
                   child: ListView(
                     padding: const EdgeInsets.all(16),
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _StatCard(
-                              label: Strings.pendingCount,
-                              count: pendingAppointments.length,
-                              color: AppColors.pending,
-                              icon: LucideIcons.clock,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _StatCard(
-                              label: Strings.suggested,
-                              count: suggestedCount,
-                              color: AppColors.suggested,
-                              icon: LucideIcons.lightbulb,
-                            ),
-                          ),
-                        ],
+                      // Stat cards
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final isWide = constraints.maxWidth > 500;
+                          final cols = isWide ? 3 : 2;
+                          final cardWidth = (constraints.maxWidth - (cols - 1) * 12) / cols;
+                          return Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            children: [
+                              SizedBox(
+                                width: cardWidth,
+                                child: _StatCard(
+                                  label: Strings.pendingCount,
+                                  count: pendingAppointments.length,
+                                  color: AppColors.pending,
+                                  icon: LucideIcons.clock,
+                                ),
+                              ),
+                              SizedBox(
+                                width: cardWidth,
+                                child: _StatCard(
+                                  label: Strings.suggested,
+                                  count: suggestedAppointments.length,
+                                  color: AppColors.suggested,
+                                  icon: LucideIcons.lightbulb,
+                                ),
+                              ),
+                              SizedBox(
+                                width: cardWidth,
+                                child: _StatCard(
+                                  label: Strings.drafts,
+                                  count: draftAppointments.length,
+                                  color: AppColors.draft,
+                                  icon: LucideIcons.filePen,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                       const SizedBox(height: 24),
 
@@ -174,6 +207,90 @@ class _PendingQueueScreenState extends ConsumerState<PendingQueueScreen> {
                             ),
                           ),
                         ),
+
+                      // --- Drafts section ---
+                      if (draftAppointments.isNotEmpty) ...[
+                        const SizedBox(height: 24),
+                        Row(
+                          children: [
+                            Text(
+                              Strings.drafts,
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.draft.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                '${draftAppointments.length}',
+                                style: const TextStyle(
+                                  color: AppColors.draft,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        ...draftAppointments.map(
+                          (a) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: AppointmentCard(
+                              appointment: a,
+                              onTap: () => context.push('/manager/appointment/${a.id}'),
+                            ),
+                          ),
+                        ),
+                      ],
+
+                      // --- Suggested (waiting for coordinator review) ---
+                      if (suggestedAppointments.isNotEmpty) ...[
+                        const SizedBox(height: 24),
+                        Row(
+                          children: [
+                            Text(
+                              Strings.suggested,
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.suggested.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                '${suggestedAppointments.length}',
+                                style: const TextStyle(
+                                  color: AppColors.suggested,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        ...suggestedAppointments.map(
+                          (a) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: AppointmentCard(
+                              appointment: a,
+                              onTap: () => context.push('/manager/appointment/${a.id}'),
+                            ),
+                          ),
+                        ),
+                      ],
 
                       // --- Pending queue ---
                       if (pendingAppointments.isNotEmpty) ...[

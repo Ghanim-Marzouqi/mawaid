@@ -6,24 +6,22 @@ import '../utils/format_date.dart';
 
 class ConflictDialog extends StatelessWidget {
   final List<Map<String, dynamic>> conflicts;
-  final bool hasMinistryConflict;
 
   const ConflictDialog({
     super.key,
     required this.conflicts,
-    required this.hasMinistryConflict,
   });
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      icon: Icon(
+      icon: const Icon(
         LucideIcons.triangleAlert,
-        color: hasMinistryConflict ? AppColors.error : AppColors.pending,
+        color: AppColors.pending,
         size: 40,
       ),
-      title: Text(
-        hasMinistryConflict ? Strings.conflictMinistry : Strings.conflictWarning,
+      title: const Text(
+        Strings.conflictWarning,
         textAlign: TextAlign.center,
       ),
       content: Column(
@@ -34,10 +32,8 @@ class ConflictDialog extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 8),
               child: Row(
                 children: [
-                  Icon(
-                    conflict['type'] == 'ministry'
-                        ? LucideIcons.landmark
-                        : LucideIcons.clock,
+                  const Icon(
+                    LucideIcons.clock,
                     size: 16,
                     color: AppColors.onSurfaceVariant,
                   ),
@@ -73,11 +69,10 @@ class ConflictDialog extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(false),
           child: const Text(Strings.cancel),
         ),
-        if (!hasMinistryConflict)
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text(Strings.conflictProceed),
-          ),
+        ElevatedButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: const Text(Strings.conflictProceed),
+        ),
       ],
     );
   }
@@ -89,15 +84,8 @@ Future<bool?> showConflictDialog(
   BuildContext context,
   List<Map<String, dynamic>> conflicts,
 ) {
-  final hasMinistry = conflicts.any(
-    (c) => c['type'] == 'ministry' && c['status'] == 'confirmed',
-  );
-
   return showDialog<bool>(
     context: context,
-    builder: (_) => ConflictDialog(
-      conflicts: conflicts,
-      hasMinistryConflict: hasMinistry,
-    ),
+    builder: (_) => ConflictDialog(conflicts: conflicts),
   );
 }

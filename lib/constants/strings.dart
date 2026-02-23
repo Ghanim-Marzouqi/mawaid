@@ -22,17 +22,13 @@ class Strings {
   static const passwordResetSuccess = 'تم تغيير كلمة المرور بنجاح';
   static const passwordResetError = 'تعذر تغيير كلمة المرور';
 
-  // Appointment types
-  static const ministry = 'إجتماع وزارة';
-  static const patient = 'موعد مريض';
-  static const external_ = 'موعد خارجي';
-
   // Statuses
   static const pending = 'بانتظار الموافقة';
   static const confirmed = 'مؤكد';
   static const rejected = 'مرفوض';
   static const suggested = 'مقترح وقت بديل';
   static const cancelled = 'ملغي';
+  static const draftStatus = 'مسودة';
 
   // Actions
   static const approve = 'موافقة';
@@ -49,6 +45,9 @@ class Strings {
   static const retry = 'إعادة المحاولة';
   static const confirm = 'تأكيد';
   static const proceed = 'متابعة';
+  static const saveAsDraft = 'حفظ كمسودة';
+  static const managerSetsTime = 'طلب تحديد الوقت من المدير';
+  static const setTime = 'تحديد الوقت';
 
   // Form fields
   static const title = 'العنوان';
@@ -61,6 +60,9 @@ class Strings {
   static const newAppointment = 'موعد جديد';
   static const editAppointment = 'تعديل الموعد';
   static const appointmentDetails = 'تفاصيل الموعد';
+  static const requiresApproval = 'يتطلب موافقة المدير';
+  static const draftRequiresConfirmation = 'مراجعة الوقت قبل التأكيد';
+  static const timeNotSet = 'الوقت غير محدد';
 
   // Notifications
   static const notifications = 'الإشعارات';
@@ -76,13 +78,24 @@ class Strings {
   static const pendingCount = 'بانتظار الموافقة';
   static const confirmedCount = 'مؤكدة';
   static const todaySchedule = 'جدول اليوم';
+  static const drafts = 'مسودات';
 
   // Manager
   static const pendingQueue = 'الرئيسية';
 
+  // Appointment type management
+  static const appointmentTypes = 'أنواع المواعيد';
+  static const addType = 'إضافة نوع';
+  static const editType = 'تعديل النوع';
+  static const deleteType = 'حذف النوع';
+  static const typeName = 'اسم النوع';
+  static const noTypes = 'لا توجد أنواع مواعيد';
+  static const confirmDeleteType = 'هل تريد حذف هذا النوع؟';
+  static const typeCreated = 'تم إنشاء النوع بنجاح';
+  static const typeUpdated = 'تم تحديث النوع بنجاح';
+  static const typeDeleted = 'تم حذف النوع بنجاح';
+
   // Errors
-  static const conflictMinistry =
-      'يوجد تعارض مع إجتماع وزارة — لا يمكن الحجز في هذا الوقت';
   static const conflictWarning = 'يوجد تعارض مع مواعيد أخرى';
   static const conflictProceed = 'متابعة رغم التعارض';
   static const networkError = 'خطأ في الاتصال';
@@ -96,7 +109,7 @@ class Strings {
   static const messageTooLong = 'الرسالة يجب أن لا تتجاوز 500 حرف';
   static const startMustBeBeforeEnd = 'وقت البداية يجب أن يكون قبل وقت النهاية';
   static const startMustBeFuture = 'وقت البداية يجب أن يكون في المستقبل';
-  static const minDuration = 'مدة الموعد يجب أن لا تقل عن 15 دقيقة';
+  static const minDuration = 'مدة الموعد يجب أن لا تقل عن 5 دقائق';
   static const notFound = 'الصفحة غير موجودة';
   static const goBack = 'العودة';
 
@@ -117,6 +130,8 @@ class Strings {
   static const suggestionSent = 'تم إرسال الاقتراح';
   static const suggestionAccepted = 'تم قبول الاقتراح';
   static const suggestionRejected = 'تم رفض الاقتراح';
+  static const draftCreated = 'تم حفظ المسودة بنجاح';
+  static const draftTimeSet = 'تم تحديد الوقت بنجاح';
 
   // Confirmation dialogs
   static const confirmApprove = 'هل تريد تأكيد هذا الموعد؟';

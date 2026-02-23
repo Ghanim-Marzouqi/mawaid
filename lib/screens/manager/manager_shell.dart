@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../providers/appointment_provider.dart';
+import '../../providers/appointment_type_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../services/realtime_service.dart';
 import '../../services/supabase_service.dart';
@@ -56,11 +57,15 @@ class _ManagerShellState extends ConsumerState<ManagerShell>
         onSuggestionChange: (_) {
           ref.read(appointmentProvider.notifier).fetchAppointments();
         },
+        onAppointmentTypeChange: (_) {
+          ref.read(appointmentTypeProvider.notifier).fetchTypes();
+        },
       );
     }
 
     Future.microtask(() {
       ref.read(notificationProvider.notifier).fetchNotifications();
+      ref.read(appointmentTypeProvider.notifier).fetchTypes();
     });
   }
 
@@ -69,6 +74,7 @@ class _ManagerShellState extends ConsumerState<ManagerShell>
     if (state == AppLifecycleState.resumed) {
       ref.read(appointmentProvider.notifier).fetchAppointments();
       ref.read(notificationProvider.notifier).fetchNotifications();
+      ref.read(appointmentTypeProvider.notifier).fetchTypes();
     }
   }
 

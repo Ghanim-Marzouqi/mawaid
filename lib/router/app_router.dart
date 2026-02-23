@@ -138,6 +138,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ),
           ),
           GoRoute(
+            path: '/manager/draft/:id',
+            builder: (_, state) => SuggestScreen(
+              id: state.pathParameters['id']!,
+              isDraft: true,
+            ),
+          ),
+          GoRoute(
             path: '/manager/notifications',
             builder: (_, __) => const mgr_notif.NotificationsScreen(),
           ),

@@ -48,10 +48,12 @@ class _EditAppointmentScreenState
             widget.id,
             {
               'title': data.title,
+              'type_id': data.typeId,
               'start_time': data.startTime!.toUtc().toIso8601String(),
               'end_time': data.endTime!.toUtc().toIso8601String(),
               'location': data.location,
               'notes': data.notes,
+              'requires_approval': data.requiresApproval,
             },
           );
 
@@ -114,11 +116,12 @@ class _EditAppointmentScreenState
             isLoading: _isLoading,
             initialData: AppointmentFormData(
               title: appointment.title,
-              type: appointment.type,
+              typeId: appointment.typeId,
               startTime: appointment.startTime,
               endTime: appointment.endTime,
               location: appointment.location,
               notes: appointment.notes,
+              requiresApproval: appointment.requiresApproval,
             ),
             onSubmit: _handleSubmit,
           ),

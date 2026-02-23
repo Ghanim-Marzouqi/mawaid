@@ -9,8 +9,9 @@ import '../../widgets/conflict_dialog.dart';
 
 class SuggestScreen extends ConsumerStatefulWidget {
   final String id;
+  final bool isDraft;
 
-  const SuggestScreen({super.key, required this.id});
+  const SuggestScreen({super.key, required this.id, this.isDraft = false});
 
   @override
   ConsumerState<SuggestScreen> createState() => _SuggestScreenState();
@@ -108,23 +109,48 @@ class _SuggestScreenState extends ConsumerState<SuggestScreen> {
         }
       }
 
-      await ref.read(appointmentProvider.notifier).suggestAlternative(
-            appointmentId: widget.id,
-            suggestedStart: _startTime!,
-            suggestedEnd: _endTime!,
-            message: _messageController.text.trim().isEmpty
-                ? null
-                : _messageController.text.trim(),
-          );
+      if (widget.isDraft) {
+        // Get the appointment to check requiresApproval
+        final state = ref.read(appointmentProvider);
+        final appointment = state.appointments
+            .where((a) => a.id == widget.id)
+            .firstOrNull;
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(Strings.suggestionSent),
-            backgroundColor: AppColors.confirmed,
-          ),
-        );
-        context.pop();
+        await ref.read(appointmentProvider.notifier).setDraftTime(
+              appointmentId: widget.id,
+              startTime: _startTime!,
+              endTime: _endTime!,
+              requiresApproval: appointment?.requiresApproval ?? true,
+            );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(Strings.draftTimeSet),
+              backgroundColor: AppColors.confirmed,
+            ),
+          );
+          context.pop();
+        }
+      } else {
+        await ref.read(appointmentProvider.notifier).suggestAlternative(
+              appointmentId: widget.id,
+              suggestedStart: _startTime!,
+              suggestedEnd: _endTime!,
+              message: _messageController.text.trim().isEmpty
+                  ? null
+                  : _messageController.text.trim(),
+            );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(Strings.suggestionSent),
+              backgroundColor: AppColors.confirmed,
+            ),
+          );
+          context.pop();
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -142,9 +168,11 @@ class _SuggestScreenState extends ConsumerState<SuggestScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final title = widget.isDraft ? Strings.setTime : Strings.suggestAlternative;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text(Strings.suggestAlternative),
+        title: Text(title),
         leading: IconButton(
           icon: const Icon(LucideIcons.arrowRight),
           onPressed: () => context.pop(),
@@ -181,28 +209,30 @@ class _SuggestScreenState extends ConsumerState<SuggestScreen> {
                       if (!_endTime!.isAfter(_startTime!)) {
                         return Strings.startMustBeBeforeEnd;
                       }
-                      if (_endTime!.difference(_startTime!).inMinutes < 15) {
+                      if (_endTime!.difference(_startTime!).inMinutes < 5) {
                         return Strings.minDuration;
                       }
                     }
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _messageController,
-                  decoration: const InputDecoration(
-                    labelText: Strings.message,
-                    prefixIcon: Icon(LucideIcons.messageSquare),
+                if (!widget.isDraft) ...[
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _messageController,
+                    decoration: const InputDecoration(
+                      labelText: Strings.message,
+                      prefixIcon: Icon(LucideIcons.messageSquare),
+                    ),
+                    maxLines: 3,
+                    validator: (value) {
+                      if (value != null && value.length > 500) {
+                        return Strings.messageTooLong;
+                      }
+                      return null;
+                    },
                   ),
-                  maxLines: 3,
-                  validator: (value) {
-                    if (value != null && value.length > 500) {
-                      return Strings.messageTooLong;
-                    }
-                    return null;
-                  },
-                ),
+                ],
                 const SizedBox(height: 24),
                 ElevatedButton.icon(
                   onPressed: _isLoading ? null : _handleSubmit,
@@ -215,10 +245,16 @@ class _SuggestScreenState extends ConsumerState<SuggestScreen> {
                             color: Colors.white,
                           ),
                         )
-                      : const Icon(LucideIcons.clockArrowUp, size: 16),
-                  label: const Text(Strings.suggestAlternative),
+                      : Icon(
+                          widget.isDraft
+                              ? LucideIcons.calendarClock
+                              : LucideIcons.clockArrowUp,
+                          size: 16,
+                        ),
+                  label: Text(title),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.suggested,
+                    backgroundColor:
+                        widget.isDraft ? AppColors.primary : AppColors.suggested,
                   ),
                 ),
               ],

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../models/appointment.dart';
-import '../models/enums.dart';
 import '../constants/strings.dart';
 import '../theme/colors.dart';
 import '../utils/format_date.dart';
@@ -70,15 +69,18 @@ class AppointmentCard extends StatelessWidget {
                                 Icon(_typeIcon, size: 13, color: _typeColor),
                           ),
                           const SizedBox(width: 6),
-                          Text(
-                            _typeLabel,
-                            style: TextStyle(
-                              color: _typeColor,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
+                          Flexible(
+                            child: Text(
+                              _typeLabel,
+                              style: TextStyle(
+                                color: _typeColor,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          const Spacer(),
+                          const SizedBox(width: 8),
                           StatusBadge(status: appointment.status),
                         ],
                       ),
@@ -93,45 +95,66 @@ class AppointmentCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Icon(
-                            LucideIcons.clock,
-                            size: 13,
-                            color: AppColors.onSurfaceVariant
-                                .withValues(alpha: 0.6),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            formatTimeRange(
-                                appointment.startTime, appointment.endTime),
-                            style: TextStyle(
+                      if (appointment.startTime != null) ...[
+                        Row(
+                          children: [
+                            Icon(
+                              LucideIcons.clock,
+                              size: 13,
                               color: AppColors.onSurfaceVariant
                                   .withValues(alpha: 0.6),
-                              fontSize: 12,
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Icon(
-                            LucideIcons.calendarDays,
-                            size: 13,
-                            color: AppColors.onSurfaceVariant
-                                .withValues(alpha: 0.6),
-                          ),
-                          const SizedBox(width: 4),
-                          Flexible(
-                            child: Text(
-                              formatShortDate(appointment.startTime),
+                            const SizedBox(width: 4),
+                            Text(
+                              formatTimeRange(
+                                  appointment.startTime!, appointment.endTime!),
                               style: TextStyle(
                                 color: AppColors.onSurfaceVariant
                                     .withValues(alpha: 0.6),
                                 fontSize: 12,
                               ),
-                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                        ],
-                      ),
+                            const SizedBox(width: 12),
+                            Icon(
+                              LucideIcons.calendarDays,
+                              size: 13,
+                              color: AppColors.onSurfaceVariant
+                                  .withValues(alpha: 0.6),
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                formatShortDate(appointment.startTime!),
+                                style: TextStyle(
+                                  color: AppColors.onSurfaceVariant
+                                      .withValues(alpha: 0.6),
+                                  fontSize: 12,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ] else ...[
+                        Row(
+                          children: [
+                            Icon(
+                              LucideIcons.clock,
+                              size: 13,
+                              color: AppColors.draft.withValues(alpha: 0.6),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              Strings.draftStatus,
+                              style: TextStyle(
+                                color: AppColors.draft.withValues(alpha: 0.8),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                       if (appointment.location != null &&
                           appointment.location!.isNotEmpty) ...[
                         const SizedBox(height: 4),
@@ -178,21 +201,18 @@ class AppointmentCard extends StatelessWidget {
     );
   }
 
-  Color get _typeColor => switch (appointment.type) {
-        AppointmentType.ministry => AppColors.ministry,
-        AppointmentType.patient => AppColors.patient,
-        AppointmentType.external_ => AppColors.external_,
-      };
+  Color get _typeColor {
+    final td = appointment.typeData;
+    if (td != null) return AppColors.typeColor(td.colorIndex);
+    return AppColors.draft;
+  }
 
-  IconData get _typeIcon => switch (appointment.type) {
-        AppointmentType.ministry => LucideIcons.landmark,
-        AppointmentType.patient => LucideIcons.userRound,
-        AppointmentType.external_ => LucideIcons.building2,
-      };
+  IconData get _typeIcon {
+    if (appointment.typeData != null) return LucideIcons.tag;
+    return LucideIcons.circleQuestionMark;
+  }
 
-  String get _typeLabel => switch (appointment.type) {
-        AppointmentType.ministry => Strings.ministry,
-        AppointmentType.patient => Strings.patient,
-        AppointmentType.external_ => Strings.external_,
-      };
+  String get _typeLabel {
+    return appointment.typeData?.name ?? Strings.appointmentType;
+  }
 }
